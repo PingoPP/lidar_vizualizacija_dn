@@ -10,7 +10,20 @@ Algoritem je bil ustvarjen v sklopu diplomske naloge
 Algorithm was made as part of bachelor thesis
 '''
 
+#-----------------------------------------------------------------------------------------------------------------------------------
+#OSGEO - pregled 
+#-----------------------------------------------------------------------------------------------------------------------------------
+
+from osgeo import gdal
+
+print(gdal.__version__)
+print(gdal.GetDriverByName('GTiff'))
+print(gdal.GetDriverCount())
+gdal.AllRegister()
+print(gdal.GetDriverCount(), gdal.GetDriverByName("GTiff"))
+
 import rvt.vis
+import rvt.default
 from pathlib import Path
 import numpy as np
 import rasterio as rio
@@ -24,7 +37,7 @@ import matplotlib.pyplot as plt
 input_data = Path(r"C:\Users\jakad\OneDrive\Desktop\3d_data\output\Pivola_klasificirano_in_rastirano.tiff")
 
 #izhod podatkov, kjer se bo shranila v prostoru, kjer je definiran pot. Datoteka, naj se shrani pod .tiff (bolj priročno) ali .tif 
-output_data = Path(r"C:\Users\jakad\OneDrive\Desktop\3d_data\output\Pivola_multihillsajd_RVT2_float32_nomhs2.tiff")
+output_data = Path(r"C:\Users\jakad\OneDrive\Desktop\3d_data\output\Pivola_multihillsajd_RVT2_float32_nomhs3.tiff")
 
 with rio.open (input_data) as src:
     data_arr = src.read(1).astype(np.float64)
@@ -37,6 +50,7 @@ with rio.open (input_data) as src:
         src.bounds.bottom,
         src.bounds.top
     ]
+
 
 #-----------------------------------------------------------------------------------------------------------------------------------
 #MULTIDIRECTIONAL HILLSHADE
@@ -58,28 +72,28 @@ mhs = rvt.vis.multi_hillshade(
 )   
 
 #-----------------------------------------------------------------------------------------------------------------------------------
-#SHRANJEVANJE zaenkrat so še napake!
+#SHRANJEVANJE 
 #-----------------------------------------------------------------------------------------------------------------------------------
 
-if output_data is not None:
-    if profile is None: 
-        raise ValueError('profile manjka!')
-    out_profile=profile.copy()
-    out_profile.update(
-        dtype='float32',
-        count=1,,
-        compress='lzw'
-        nodata=None
-        )
-    with rio.open(output_data, 'w', **out_profile) as dst:
-        dst.write(mhs.astype('float32'), 1)
+rvt.default.save_raster(
+    src_raster_path=input_data,
+    out_raster_path=output_data,
+    out_raster_arr=mhs,
+    no_data=np.nan
+)
 
 #-----------------------------------------------------------------------------------------------------------------------------------
-#HITER PRIKAZ MULTIDIRECTIONAL HILLSHADE-ja z MATPLOTLIB-om
+#HITER PRIKAZ MULTIDIRECTIONAL HILLSHADE-ja z MATPLOTLIB-om 
 #-----------------------------------------------------------------------------------------------------------------------------------
+
+#Prikaz ni najbolj identičen, kot prikazuje v QGis-u. Zadevo bi se dalo popraviti, ampak je precej komplicirano.
+#To služi zgolj hitri pregled, če vse funkcionira, tako kot mora
 
 fig, ax = plt.subplots(figsize=(10, 10))
-im = ax.imshow(mhs, extent=ext)
-ax.set_title('Multidirectional hillshade by RVT')
+mhs_display = np.nanmin(mhs, axis=0)
+mhs_display = data_arr, mhs_display
+im = ax.imshow(mhs_display, extent=ext)
+ax.set_title("Multidirectional hillshade by RVT")
 plt.show()
+
 
