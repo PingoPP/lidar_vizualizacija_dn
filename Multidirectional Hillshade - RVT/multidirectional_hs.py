@@ -93,7 +93,7 @@ fig, ax = plt.subplots(figsize=(10, 10))
 mhs_display = np.nanmin(mhs, axis=0)
 mhs_display = data_arr, mhs_display
 im = ax.imshow(mhs_display, extent=ext)
-ax.set_title("Multidirectional hillshade by RVT")
+ax.set_title('Multidirectional hillshade by RVT')
 plt.show()
 
 
