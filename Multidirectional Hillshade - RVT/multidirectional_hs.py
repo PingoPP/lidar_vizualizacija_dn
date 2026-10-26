@@ -1,6 +1,6 @@
 '''
 Avtor / Author: Jaka Dacar 
-Nazadnje spremenjeno / Last changed: 25.10.2026
+Nazadnje spremenjeno / Last changed: 26.10.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - večsmerno senčenje oz. Multidirect Hillshade s pomočjo RVT oz. Relief Visualization Toolbox(v nadaljevanju bom uporabil besedo 'multidirectional hillshade')
 That algorithm was made for visualisation tecnique - Multidirectional hillshade with help by RVT or Relief Visualization Toolbox (in continute, I will use word 'multidirectional hillshade')
