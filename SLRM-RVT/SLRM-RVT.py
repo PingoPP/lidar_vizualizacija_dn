@@ -14,40 +14,63 @@ import rvt.default
 from pathlib import Path
 import numpy as np
 from datetime import datetime
-from scipy.ndimage import gaussian_filter 
+import glob
+#from osgeo import gdal
+#import os
 
 #---------------------------------------------------------------
 # INPUT in OUTPUT
 #---------------------------------------------------------------
 
-input_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\3d_data\output")
+input_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga")
 out_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga\SLRM-RVT\output-data")
 out_dir.mkdir(parents=True, exist_ok=True)
 
 #---------------------------------------------------------------
-# SLRM in zrihti da bo brez tega gaussian filter in z gaussian filter
-#Exception: dem.ndim need be 2D!
+# INPUT tiff DATA 
 #---------------------------------------------------------------
 
-def run_slrm(input_path, output_path, radius_cell=20, ve_factor=1):
+#image_tiff = []
+
+#for i in glob.glob(os.path.join(input_dir, '*.tiff')):
+#    im = gdal.Open(os.path.join(input_dir, i))
+#    image_tiff.append(i)
+
+#print(i)
+
+files = glob.glob('*.tiff' or '*.tif' or '*.TIFF' or '*.TIF',
+                  root_dir=input_dir,
+                  recursive=True)
+files=[f for f in files if '.tiff_checkpoints' not in f]
+print(files)
+
+#---------------------------------------------------------------
+# SLRM 
+#---------------------------------------------------------------
+
+def run_slrm(input_path, 
+             output_path, 
+             radius_cell=20, 
+             ve_factor=1
+            ):
+    
     data_dict = rvt.default.get_raster_arr(str(input_path))
-    dem = data_dict['array'].astype('float64')
+    dem = np.asarray(data_dict['array'], dtype = np.float64)
     no_data = data_dict['no_data']
-
-    dem[dem == no_data] = np.nan
-    mean_value = np.nanmean(dem)
-    dem[np.isnan(dem)] = mean_value
-    twod = gaussian_filter(dem, float(radius_cell))
-
 
     if dem.ndim != 2: 
         raise Exception('dem.ndim need be 2D!')
-    if radius_cell < 10 or radius_cell > 50:
-        raise Exception('Radius_cell need be between 10 and 50')
+    if no_data is not None and not np.isnan(no_data):
+        dem[dem == no_data] = np.nan
+    if dem.shape[0] <= 2 * radius_cell or dem.shape[1] <= 2 * radius_cell:
+        raise ValueError(f'dem.shape: {dem.shape} is too few for radius cell: {radius_cell}')
+    if radius_cell < 1:
+        raise Exception('Radius_cell need be positive (same or more than 1)')
     if not (10000 >= ve_factor >= -10000):
-        raise Exception('Ve_factor need be between 1000 and -1000')
+        raise Exception('Ve_factor need be between 10000 and -10000')
+
     
-    slrm_arr = rvt.vis.slrm(dem=twod,
+    slrm_arr = rvt.vis.slrm(dem=dem,
                             radius_cell=radius_cell,
                             ve_factor=ve_factor,
                             no_data=no_data)
