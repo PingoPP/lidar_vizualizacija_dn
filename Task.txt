@@ -4,7 +4,7 @@
 
 dodaj v vseh vizualizacijah še Mediana filter pa poglej kako to vpliva (mhs gotcha)
 spoznaj in razumi filozofijo delovanja SLMR- Simple Local Model Relief (po nesreči mi je uspelo narediti hahaha)
-Spoznaj knjižico GLOB in spremeni strukturo kode gotcha
+Spoznaj knjižico GLOB, datetime in spremeni strukturo kode gotcha
 QGIS - learn and making a random map 
 
 
