@@ -8,7 +8,7 @@ Spoznaj knjižico GLOB in spremeni strukturo kode gotcha
 QGIS - learn and making a random map 
 
 
-28.10
+29.10
 
 posodobi input in output v algoritmu 
 dodaj datoteke na github
