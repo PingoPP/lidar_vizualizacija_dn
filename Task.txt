@@ -1,0 +1,8 @@
+1760x2460 - Krajinska arheologija 
+
+26.10 
+
+dodaj v vseh vizualizacijah še Mediana filter pa poglej kako to vpliva (mhs gotcha)
+spoznaj in razumi filozofijo delovanja SLMR- Simple Local Model Relief (po nesreči mi je uspelo narediti hahaha)
+Spoznaj knjižico GLOB in spremeni strukturo kode gotcha
+QGIS - learn and making a random map 
