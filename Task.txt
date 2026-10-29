@@ -11,3 +11,4 @@ QGIS - learn and making a random map
 28.10
 
 posodobi input in output v algoritmu 
+dodaj datoteke na github
