@@ -93,6 +93,6 @@ def run_slrm(input_path,
 # ZANKA ZA SHRANJEVANJE 
 #---------------------------------------------------------------
 
-for tif in input_dir.glob('*.tif*'):
-    out = out_dir / f'{tif.stem}_slrm_r20.tiff'
+for tif in input_dir.glob('*.tif*' or '*.tiff' or '*.TIF' or '*.TIFF'):
+    out = out_dir / f'{tif.stem}_slrm_r20_rvt.tiff'
     print('Shranjeno:', run_slrm(tif, out, radius_cell=20))
