@@ -1,6 +1,6 @@
 '''
 Avtor / Author: Jaka Dacar 
-Nazadnje spremenjeno / Last changed: 29.10.2026
+Nazadnje spremenjeno / Last changed: 30.10.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - senčenja oz. hillshade (v nadaljevanju bom uporabil besedo 'hillshade')
 That algorithm was made for visualisation tecnique - hillshade (in continute, I will use word 'hillshade')
@@ -11,7 +11,7 @@ Algorithm was made as part of bachelor thesis
 '''
 
 import numpy as np
-#import rasterio as rio 
+import rasterio as rio 
 #import matplotlib.pyplot as plt
 from pathlib import Path 
 import glob 
@@ -24,15 +24,14 @@ from datetime import datetime
 input_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga")
 
 #izhod podatkov, kjer se bo shranila v prostoru, kjer je definiran pot. Datoteka, naj se shrani pod .tiff (bolj priročno) ali .tif 
-output_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga\output_data")
+output_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga\Hillshade\output_data")
 output_dir.mkdir(parents=True, exist_ok=True)
 
-files = glob.glob('*.tif' or '*.tiff' or '*.TIF' or '*TIFF',
+files = glob.glob('*.tif' or '*.tiff',
                   root_dir=input_dir,
                   recursive=True)
 files = [f for f in files if '.tiff_checkpoints' not in f]
 print(files)
-
 
 #-----------------------------------------------------------------------------------------------------------------------------------
 #DODATNO TEMNENJE ali SVETLJENJE 
@@ -50,7 +49,6 @@ def cumulative_count_cut(band, min_percentile=2, max_percentile=98):
 #-----------------------------------------------------------------------------------------------------------------------------------
 def hillshade(
             dtm, 
-            no_data = None,
             azimuth=215, 
             altitude=35, 
             cellsize_x=0.5, 
@@ -85,27 +83,66 @@ def hillshade(
         np.cos(azimuth_rad - aspect)
     )
 
+
 #vrednost se nato omeji na razpon 0-1, ki jih nato pretvori na razpon 0-255 in shrani kot 32-bitna slika 
     hs = (255 * np.clip(shaded, 0, 1)).astype(np.float32)
 
-    dtm = dtm.astype(np.float64, copy=True)
-    if no_data is not None and not np.isnan(no_data):
-        dtm[dtm == no_data] = np.nan
-
-    if src_out_path.exists():
-        stamp = datetime.now().strftime('%Y%m%d_%H%M')
-        src_out_path = src_out_path.with_name(f'{src_out_path.stem}_{stamp}{src_out_path.suffix}')
-
-    return dtm, hs
+    return hs
 
 #-----------------------------------------------------------------------------------------------------------------------------------
 #ZADNJI DEL in SHRANJEVANJE DATOTEKE -- dodaj in popravi vsebino, ker trenutno mi noče shraniti in deluje vse pod def - to je tudi treba posebej izločiti ven!
 #-----------------------------------------------------------------------------------------------------------------------------------
 
-for tif in input_dir.glob('*.tif' or '*.tiff' or '*.TIF' or '*TIFF'):
-    out = output_dir / f'{tif.stem}_hillshade.tiff'
-    print('Shranjeno: ', hillshade(tif, out, azimuth=215, altitude=35))
+raster_paths = [
+    path for path in input_dir.rglob('*')
+    if path.is_file()
+    and path.suffix.lower() in {'.tif', '.tiff'}
+    and output_dir.resolve() not in path.resolve().parents
+]
 
+def make_output_path(tif):
+    out_path = output_dir / f"{tif.stem}_hillshade.tiff"
+    if out_path.exists():
+        stamp = datetime.now().strftime("%Y%m%d_%H%M")
+        out_path = out_path.with_name(f"{out_path.stem}_{stamp}{out_path.suffix}")
+    return out_path
+
+def process_raster(tif):
+    with rio.open(tif) as src:
+        dtm = src.read(1, masked=True).astype(np.float64).filled(np.nan)
+        profile = src.profile.copy()
+        cellsize_x = abs(src.transform.a)
+        cellsize_y = abs(src.transform.e)   # e je višina celice, b je rotacija
+
+    hs = hillshade(dtm, 
+                   azimuth=215, 
+                   altitude=35,
+                   cellsize_x=cellsize_x, 
+                   cellsize_y=cellsize_y
+                   )
+
+    profile.update(driver='GTiff', 
+                   dtype='float32', 
+                   count=1,
+                   nodata=np.nan, 
+                   compress='lzw'
+                   )
+
+    out = make_output_path(tif)
+    with rio.open(out, 'w', **profile) as dst:
+        dst.write(hs, 1)
+    return out
+
+if not raster_paths:
+    print(f'{ValueError}, sorry, we do not find a data!')  
+    
+
+for tif in raster_paths:
+#    print(f'Obdelujem: {tif.name}')
+    print(f'Shranjeno: {process_raster(tif)}')
+    break
+
+#print('\nObdelava zaključena!')
 #-----------------------------------------------------------------------------------------------------------------------------------
 #HITER PRIKAZ HILLSHADE-ja Z MATPLOTLIB-om
 #-----------------------------------------------------------------------------------------------------------------------------------
