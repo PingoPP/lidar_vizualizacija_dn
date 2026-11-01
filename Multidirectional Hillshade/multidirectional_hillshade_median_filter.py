@@ -8,6 +8,8 @@ That algorithm was made for visualisation tecnique - Multidirectional hillshade 
 
 Algoritem je bil ustvarjen v sklopu diplomske naloge 
 Algorithm was made as part of bachelor thesis
+
+ALERT: the visualization is not ready yet. Because, we have a problem by median_filter and output is full of noises. The problem will be resolved then, when I done OPNS visualization!
 '''
 
 import numpy as np
