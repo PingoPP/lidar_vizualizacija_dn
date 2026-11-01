@@ -12,3 +12,8 @@ QGIS - learn and making a random map
 
 posodobi input in output v algoritmu 
 dodaj datoteke na github
+
+1.11
+
+delaj na opns
+popravi napako v mhs_kernel_size
