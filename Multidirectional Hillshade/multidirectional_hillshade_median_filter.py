@@ -1,9 +1,9 @@
 '''
 Avtor / Author: Jaka Dacar 
-Nazadnje spremenjeno / Last changed: 27.10.2026
+Nazadnje spremenjeno / Last changed: 1.11.2026
 
-Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - večsmerno senčenje oz. Multidirect Hillshade z median filter (v nadaljevanju bom uporabil besedo 'multidirectional hillshade')
-That algorithm was made for visualisation tecnique - Multidirectional hillshade by median filter (in continute, I will use word 'multidirectional hillshade')
+Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - večsmerno senčenje oz. Multidirect Hillshade (v nadaljevanju bom uporabil besedo 'multidirectional hillshade')
+That algorithm was made for visualisation tecnique - Multidirectional hillshade (in continute, I will use word 'multidirectional hillshade')
 
 
 Algoritem je bil ustvarjen v sklopu diplomske naloge 
@@ -15,17 +15,24 @@ import rasterio as rio
 import matplotlib.pyplot as plt
 from pathlib import Path 
 from scipy.ndimage import median_filter, distance_transform_edt
-
+from datetime import datetime
+import glob
 
 #-----------------------------------------------------------------------------------------------------------------------------------
 #INPUT in OUTPUT
 #-----------------------------------------------------------------------------------------------------------------------------------
 #vhod pot podatka, za katero imaš namen uporabiti za multidirectional hillshade. Datoteka mora biti nujno shranjena pod .tiff ali .tif
-dtm_data = Path(r"C:\Users\jakad\OneDrive\Desktop\3d_data\output\Pivola_klasificirano_in_rastirano.tiff") 
+input_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga") 
 
 #izhod podatkov, kjer se bo shranila v prostoru, kjer je definiran pot. Datoteka, naj se shrani pod .tiff (bolj priročno) ali .tif
-save_path = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga\Multidirectional_Hillshade\output_data\mediana_mhs_1.tiff") 
+output_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga\Multidirectional_Hillshade\output_data") 
+output_dir.mkdir(parents=True, exist_ok=True)
 
+files = glob.glob('*.tif' or '*.tiff',
+                  root_dir=input_dir,
+                  recursive=True)
+files = [f for f in files if '.tiff_checkpoints' not in f]
+print(f'FILES: {files}')
 #-----------------------------------------------------------------------------------------------------------------------------------
 #MEDIANA FILTER
 #-----------------------------------------------------------------------------------------------------------------------------------
@@ -93,10 +100,14 @@ def multidirectional_hillshade(
 
 #pri tem n in az nimata nobene povezave, saj sta povsem ločena
     lights = {
-        "siva":      {"azimuth": 315, "altitude": 45, "r": 0.50, "g": 0.50, "b": 0.50},  
-        "zelena":    {"azimuth": 45,  "altitude": 40, "r": 0.20, "g": 0.75, "b": 0.30},  
-        "modra":     {"azimuth": 135, "altitude": 40, "r": 0.20, "g": 0.40, "b": 0.90}, 
-        "vijolicna": {"azimuth": 225, "altitude": 40, "r": 0.60, "g": 0.30, "b": 0.80},  
+    "zelena":    {"azimuth": 0,   "altitude": 25, "r": 0.10, "g": 0.90, "b": 0.20},  # sever
+    "turkizna":  {"azimuth": 45,  "altitude": 25, "r": 0.10, "g": 0.80, "b": 0.80},  # severovzhod
+    "modra":     {"azimuth": 90,  "altitude": 25, "r": 0.10, "g": 0.30, "b": 1.00},  # vzhod
+    "vijolicna": {"azimuth": 135, "altitude": 25, "r": 0.80, "g": 0.10, "b": 0.90},  # jugovzhod
+    "roza":      {"azimuth": 180, "altitude": 25, "r": 0.90, "g": 0.20, "b": 0.40},  # jug
+    "oranzna":   {"azimuth": 225, "altitude": 25, "r": 0.95, "g": 0.55, "b": 0.10},  # jugozahod
+    "rumena":    {"azimuth": 270, "altitude": 25, "r": 0.90, "g": 0.85, "b": 0.15},  # zahod
+    "siva":      {"azimuth": 315, "altitude": 30, "r": 0.60, "g": 0.60, "b": 0.60},  # severozahod
 }
 #vključevanje weight z RGB, ki normalizira vsak kanal, da ostanejo v vrednosti med 0 in 1
     rgb = np.zeros(dtm.shape + (3,), dtype=np.float64)
@@ -114,17 +125,31 @@ def multidirectional_hillshade(
 
     return rgb / weight
 
+raster_path = [
+    path for path in input_dir.rglob('*')
+    if path.is_file()
+    and path.suffix.lower() in {'.tif' or '.tiff'}
+    and output_dir.resolve() not in path.resolve().parents
+]
 
-with rio.open(dtm_data) as ds:
-    dtm = ds.read(1, masked=True).filled(np.nan)
-    profile = ds.profile
-    resolution = ds.res[0]
+if raster_path:
+    tif = raster_path[0]
+    with rio.open(tif) as src:
+        profile = src.profile.copy()
+        if profile is None: 
+            print('Profile is not exsist!')
+        dtm = src.read(1, masked=True).astype('float64')
+        resolution = abs(float(src.res[0]))
+        if src.nodata is not None:
+            dtm = np.where(dtm == src.nodata, np.nan, dtm)
     ext = (
-        ds.bounds.left,
-        ds.bounds.right,
-        ds.bounds.bottom,
-        ds.bounds.top
+        float(src.bounds.left),
+        float(src.bounds.right),
+        float(src.bounds.bottom),
+        float(src.bounds.top)
     )
+else:
+    raise FileNotFoundError('No find a .tiff data!')
 
 #izračun naklona oz. slope in glede temnosti senčenja. 
 #večji naklon pomeni nižjo slope_term
@@ -140,34 +165,68 @@ out = (np.nan_to_num(m_hs * slope_term[..., None]) * 255).astype("float64")
 #SHRANJEVANJE 
 #-----------------------------------------------------------------------------------------------------------------------------------
 
-if save_path is not None:   
-    if profile is None:
-        raise ValueError(f'Manjka geografski {profile} rastra')
+def make_out_new(tif):
+    out_path = output_dir / f'{tif.stem}_mhs_kernel.tif'
+    if out_path.exists():
+        stamp = datetime.now().strftime('%Y%m%d_%H%M')
+        out_path = out_path.with_name(f'{out_path.stem}_{stamp}{out_path.suffix}')
+        
+        
+    return out_path
 
-    out_profile = profile.copy()
-    out_profile.update(
+def rasterio_procces(tif):
+    with rio.open(tif) as src:
+        dtm = src.read(1, masked=True).astype('float64').filled(np.nan)
+        profile = src.profile.copy()
+
+
+    mhs= multidirectional_hillshade(
+        dtm, 
+        resolution=0.5,
+        n=12,
+        zfactor=2.0
+    )
+
+    mhs = np.asarray(mhs, dtype=np.float64)
+    if mhs.ndim == 2:
+        mhs = mhs[np.newaxis, ...]
+    elif mhs.ndim == 3 and mhs.shape[-1] < mhs.shape[0]:
+        mhs = np.moveaxis(mhs, -1, 0)
+
+    profile.upadte(
+        driver = 'GTiff',
         dtype='float64', 
-        count=3, 
+        count=mhs.shape[0],
+        weight=mhs.shape[1],
+        width=mhs.shape[2], 
         compress='lzw',
         nodata=None
     )
-    with rio.open(save_path, 'w', **out_profile) as dst:
-        dst.write(out.astype("float64").transpose(2, 0, 1))
 
-    if save_path.exists and save_path.stat().st_size > 0:
-        print('Je shranilo', save_path)
-    else:
-        print('Ni se shranilo')
+    out = make_out_new(tif)
+    with rio.open(out, 'w', **profile) as dst:
+        dst.write(mhs)
+    
+
+    return out
+
+    
+if not raster_path:
+    print(f'{ValueError}, sorry we do not find a data')
+
+for tif in raster_path:
+    print(f'Shranjeno{rasterio_procces(tif)}')
+    break
 
 #-----------------------------------------------------------------------------------------------------------------------------------
 #HITER PRIKAZ MULTIDIRECTIONAL HILLSHADE-ja z MATPLOTLIB-om 
 #-----------------------------------------------------------------------------------------------------------------------------------
 
-fig, ax = plt.subplots(figsize = (5, 5))
+#fig, ax = plt.subplots(figsize = (5, 5))
 
-showing = out / np.max(out)
+#showing = out / np.max(out)
 
-im = ax.imshow(showing, extent=ext)
-ax.set_title("Multidirectional hillshade")
-ax.axis("on")
-plt.show()
+#im = ax.imshow(showing, extent=ext)
+#ax.set_title("Multidirectional hillshade")
+#ax.axis("on")
+#plt.show()
