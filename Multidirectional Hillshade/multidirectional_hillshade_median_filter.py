@@ -130,7 +130,7 @@ def multidirectional_hillshade(
 raster_path = [
     path for path in input_dir.rglob('*')
     if path.is_file()
-    and path.suffix.lower() in {'.tif' or '.tiff'}
+    and path.suffix.lower() in {'.tiff' or '.tif'}
     and output_dir.resolve() not in path.resolve().parents
 ]
 
