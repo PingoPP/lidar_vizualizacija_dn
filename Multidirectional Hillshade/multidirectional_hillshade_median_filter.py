@@ -1,6 +1,6 @@
 '''
 Avtor / Author: Jaka Dacar 
-Nazadnje spremenjeno / Last changed: 1.11.2026
+Nazadnje spremenjeno / Last changed: 2.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - večsmerno senčenje oz. Multidirect Hillshade (v nadaljevanju bom uporabil besedo 'multidirectional hillshade')
 That algorithm was made for visualisation tecnique - Multidirectional hillshade (in continute, I will use word 'multidirectional hillshade')
