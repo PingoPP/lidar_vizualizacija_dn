@@ -28,12 +28,13 @@ files = glob.glob('*.tiff' or '*.tif',
                   root_dir=input_dir,
                   recursive=True)
 
-files = [f for f in file if '.tiff_checkpoint' not in f]
-print(f'Files: {file}')
+files = [f for f in files if '.tiff_checkpoint' not in f]
+print(f'Files: {files}')
 
 
-def opennes():
-    data_dict = rvt.default.get_raster_arr(str(input_dir))
+def openness(tif,
+             out):
+    data_dict = rvt.default.get_raster_arr(str(tif))
     arr = np.asanyarray(data_dict['array'], dtype=np.float32)
 
     if arr.ndim == 3:
@@ -55,10 +56,11 @@ def opennes():
 
     if dem.ndim != 2:
         raise ValueError(f'Input must be 2D, but got {dem.ndim}')
-
+    
+    neg_arr = -arr
 
     opns_arr = rvt.vis.sky_view_factor(
-        dem=arr,
+        dem=neg_arr,
         resolution=resolution_x,
         compute_svf=False,
         compute_opns=True,
@@ -70,20 +72,19 @@ def opennes():
         no_data=no_data
     )
 
-    opns = opns_arr['opns'].astype(np.float32)
+    #opns = opns_arr['opns'].astype(np.float32)
 
 #NEG OPNS 
     #Če želiš definiriati oz. uporabiti Negative OPNS moraš positivie zbrisati in ohraniti samo ta del postopka
     #If you want define or use Negative OPNS, you must positive OPNS delete and saving just that part
-    neg_arr = -arr
-    if no_data is not None is not np.isnan(no_data):
+    if no_data is not None and not np.isnan(no_data):
         neg_arr[arr == no_data] = no_data
     neg_opns = opns_arr['opns']
     
     output = rvt.default.save_raster(
-        src_raster_path=str(input_dir),
-        out_raster_path=str(output_dir),
-        out_raster_arr=opns,  # za negative opns moraš spremeniti v neg_opns! // for negative opns you need change to neg_opns!
+        src_raster_path=str(tif),
+        out_raster_path=str(out),
+        out_raster_arr=neg_opns,  # za negative opns moraš spremeniti v neg_opns! // for negative opns you need change to neg_opns!
         no_data=np.nan
     )
 
@@ -93,8 +94,13 @@ def opennes():
 
     return output
 
-for tif in input_dir.rglob('*.tiff' or '*.tif'):
-    out = output_dir / f'{tif.stem}_opns.tiff'  # Priporočam, da zraven dodaš še neg_, da se lažje znajdeš v datoteki // I recommend, you added neg_, for easier organization in your data saving
-    print(f'Processing: {opns_run(tif, output_data=out)}')
+for tif in input_dir.rglob('*.tiff'):
+    out = output_dir / f'{tif.stem}_opns.tiff'
+    print(f'Processing: {openness(tif, out)}')
     break
+    
+    
+
+
+
     
