@@ -1,6 +1,6 @@
 '''
 Avtor / Author: Jaka Dacar 
-Nazadnje spremenjeno / Last changed: 2.11.2026
+Nazadnje spremenjeno / Last changed: 6.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - odprtost oz. Openness s pomočjo metode RVT (v nadaljevanju bom uporabil besedo 'opns')
     - v tej kodi bosta definirani positive in negative opns
@@ -72,10 +72,18 @@ def opennes():
 
     opns = opns_arr['opns'].astype(np.float32)
 
+#NEG OPNS 
+    #Če želiš definiriati oz. uporabiti Negative OPNS moraš positivie zbrisati in ohraniti samo ta del postopka
+    #If you want define or use Negative OPNS, you must positive OPNS delete and saving just that part
+    neg_arr = -arr
+    if no_data is not None is not np.isnan(no_data):
+        neg_arr[arr == no_data] = no_data
+    neg_opns = opns_arr['opns']
+    
     output = rvt.default.save_raster(
         src_raster_path=str(input_dir),
         out_raster_path=str(output_dir),
-        out_raster_arr=opns,
+        out_raster_arr=opns,  # za negative opns moraš spremeniti v neg_opns! // for negative opns you need change to neg_opns!
         no_data=np.nan
     )
 
@@ -86,7 +94,7 @@ def opennes():
     return output
 
 for tif in input_dir.rglob('*.tiff' or '*.tif'):
-    out = output_dir / f'{tif.stem}_opns.tiff'
+    out = output_dir / f'{tif.stem}_opns.tiff'  # Priporočam, da zraven dodaš še neg_, da se lažje znajdeš v datoteki // I recommend, you added neg_, for easier organization in your data saving
     print(f'Processing: {opns_run(tif, output_data=out)}')
     break
     
