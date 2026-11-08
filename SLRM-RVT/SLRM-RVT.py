@@ -90,7 +90,7 @@ def run_slrm(input_path,
     return output_path
 
 #---------------------------------------------------------------
-# ZANKA ZA SHRANJEVANJE 
+# SHRANJEVANJE 
 #---------------------------------------------------------------
 
 for tif in input_dir.glob('*.tif*'):
