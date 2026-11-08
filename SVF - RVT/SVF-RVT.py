@@ -1,6 +1,6 @@
 '''
 Avtor / Author: Jaka Dacar 
-Nazadnje spremenjeno / Last changed: 3.11.2026
+Nazadnje spremenjeno / Last changed: 8.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - Sky View Factor s pomočjo metode RVT (v nadaljevanju bom uporabil besedo 'svf')
     - v tej kodi bosta definirani positive in negative opns
@@ -20,6 +20,10 @@ import rvt.default
 import numpy as np
 #import rasterio as rio
 
+#-----------------------------------------------------------------------------------------------------------------------------------
+#INPUT in OUTPUT 
+#-----------------------------------------------------------------------------------------------------------------------------------
+
 input_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga")
 output_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga\Openness-RVT\output_data")
 output_dir.mkdir(parents=True, exist_ok=True)
@@ -30,7 +34,11 @@ file = glob.glob('*.tiff' or '*.tif',
 file = [f for f in file if '.tiff_checkpoint' not in f]
 print(f'Files: {file}')
 
-def opns_run(input_data: Path, 
+#-----------------------------------------------------------------------------------------------------------------------------------
+#SKY VIEW FACTOR  
+#-----------------------------------------------------------------------------------------------------------------------------------
+
+def svf_run(input_data: Path, 
              output_data: Path,
              ve_factor=1.0,
              r_max=10,
@@ -55,10 +63,6 @@ def opns_run(input_data: Path,
     resolution = data_dict['resolution']
     resolution_x = resolution[0]
     #resolution_y = resolution[1]
-
-
-
-
 
     #with rio.open(input_data) as src:
     #    profile = src.profile
@@ -95,7 +99,6 @@ def opns_run(input_data: Path,
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_data = output_data.with_stem(f'{output_data.stem}_{stamp}')
 
-
     rvt.default.save_raster(
         src_raster_path=str(input_data),
         out_raster_path=str(output_data),
@@ -120,14 +123,15 @@ def opns_run(input_data: Path,
     #
     #return output_data
 
+#-----------------------------------------------------------------------------------------------------------------------------------
+#SHRANJEVANJE 
+#-----------------------------------------------------------------------------------------------------------------------------------
 
 for tif in input_dir.rglob('*.tiff' or '*.tif'):
-    out = output_dir / f'{tif.stem}_opns.tiff'
-    print(f'Processing: {opns_run(tif, output_data=out)}')
+    out = output_dir / f'{tif.stem}_svf.tiff'
+    print(f'Processing: {svf_run(tif, output_data=out)}')
     break
 
-
-    
 
 
 
