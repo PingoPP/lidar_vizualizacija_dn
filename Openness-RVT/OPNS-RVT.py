@@ -1,6 +1,6 @@
 '''
 Avtor / Author: Jaka Dacar 
-Nazadnje spremenjeno / Last changed: 6.11.2026
+Nazadnje spremenjeno / Last changed: 8.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - odprtost oz. Openness s pomočjo metode RVT (v nadaljevanju bom uporabil besedo 'opns')
     - v tej kodi bosta definirani positive in negative opns
@@ -18,6 +18,9 @@ from pathlib import Path
 import glob 
 from datetime import datetime
 
+#-----------------------------------------------------------------------------------------------------------------------------------
+#INPUT in OUTPUT
+#-----------------------------------------------------------------------------------------------------------------------------------
 
 
 input_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga")
@@ -31,6 +34,9 @@ files = glob.glob('*.tiff' or '*.tif',
 files = [f for f in files if '.tiff_checkpoint' not in f]
 print(f'Files: {files}')
 
+#-----------------------------------------------------------------------------------------------------------------------------------
+#OPENNESS 
+#-----------------------------------------------------------------------------------------------------------------------------------
 
 def openness(tif,
              out):
@@ -56,11 +62,17 @@ def openness(tif,
 
     if dem.ndim != 2:
         raise ValueError(f'Input must be 2D, but got {dem.ndim}')
+
+
+#-----------------------------------------------------------------------------------------------------------------------------------
+#OPENNESS - Positive in Negative
+#-----------------------------------------------------------------------------------------------------------------------------------
+
     
-    neg_arr = -arr
+    #neg_arr = -arr
 
     opns_arr = rvt.vis.sky_view_factor(
-        dem=neg_arr,
+        dem=dem,  #če želiš dati negativni opns jo spremeni v neg_arr // if you want negative opns, change into neg_arr 
         resolution=resolution_x,
         compute_svf=False,
         compute_opns=True,
@@ -72,34 +84,45 @@ def openness(tif,
         no_data=no_data
     )
 
-    #opns = opns_arr['opns'].astype(np.float32)
+    opns = opns_arr['opns'].astype(np.float32)
 
 #NEG OPNS 
     #Če želiš definiriati oz. uporabiti Negative OPNS moraš positivie zbrisati in ohraniti samo ta del postopka
     #If you want define or use Negative OPNS, you must positive OPNS delete and saving just that part
-    if no_data is not None and not np.isnan(no_data):
-        neg_arr[arr == no_data] = no_data
-    neg_opns = opns_arr['opns']
+    #if no_data is not None and not np.isnan(no_data):
+        #neg_arr[arr == no_data] = no_data
+
+    #neg_opns = opns_arr['opns'].astype(np.float32)
     
-    output = rvt.default.save_raster(
-        src_raster_path=str(tif),
-        out_raster_path=str(out),
-        out_raster_arr=neg_opns,  # za negative opns moraš spremeniti v neg_opns! // for negative opns you need change to neg_opns!
-        no_data=np.nan
-    )
-
-    if output.exists():
+    if out.exists():
         stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        output = output.with_stem(f'{output.stem}_{stamp}') 
+        output = out.with_stem(f'{out.stem}_{stamp}') 
 
-    return output
+    rvt.default.save_raster(
+        src_raster_path=str(tif),
+        out_raster_path=str(output),
+        out_raster_arr=opns_arr,  # za negative opns moraš spremeniti v neg_opns! // for negative opns you need change to neg_opns!
+        no_data=np.nan
+        )
+    
+    return out
+
+#-----------------------------------------------------------------------------------------------------------------------------------
+#SHRANJEVANJE 
+#-----------------------------------------------------------------------------------------------------------------------------------
+
 
 for tif in input_dir.rglob('*.tiff'):
-    out = output_dir / f'{tif.stem}_opns.tiff'
+    out = output_dir / f'{tif.stem}_opns.tiff' 
+    # priporočam, da če želiš delati v negativni OPNS, spremeni ime v nekaj, da se boš lahko znašel // I recommend that if you want to work in 
+    # a negative OPNS, you change the name to something that will help you keep track.
     print(f'Processing: {openness(tif, out)}')
     break
     
     
+
+
+
 
 
 
