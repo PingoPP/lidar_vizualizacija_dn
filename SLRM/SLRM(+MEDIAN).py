@@ -128,7 +128,7 @@ def slrm (dem=data_arr,
     dem *= ve_factor
     slrm_out = dem - mediana_filter(dem, radius_cell)
 
-    if slrm_out.exsist():
+    if slrm_out.exists():
         stamp = datetime.now().strftime('%Y%m%d_%H%M') 
         slrm_path = slrm_out.with_name(f'{slrm_out.stem}_{stamp}{slrm_out.suffix}')
     
