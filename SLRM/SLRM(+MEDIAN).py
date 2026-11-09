@@ -1,6 +1,6 @@
 '''
 Avtor / Author: Jaka Dacar 
-Nazadnje spremenjeno / Last changed: 8.11.2026
+Nazadnje spremenjeno / Last changed: 9.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - Simple Local Relief Model (v nadaljevanju bom uporabil besedo 'SLRM')
 That algorithm was made for visualisation tecnique - Simple Local Relief Model (in continute, I will use word 'SLRM')
@@ -49,32 +49,17 @@ dict_array = {
 }
 
 #-----------------------------------------------------------------------------------------------------------------------------------
-#Dodaj še min, max cumulative
+#CUMULATIVE MIN in MAX
 #-----------------------------------------------------------------------------------------------------------------------------------
 
-def cumulative_min_max(band, min_per=2, max_per=98):
-    new_band= band[band !=0]
-    min = np.nanpercentile(new_band, min_per)
-    max = np.nanpercentile(new_band, max_per)
+def cumulative_min_max(band, min_per=2, max_per=98, zero=False):
+    mask = np.isfinite(band)
+    if zero:
+        mask &=(band != 0)
+    valid = band[mask]
+    a_min = np.nanpercentile(valid, min_per)
+    a_max = np.nanpercentile(valid, max_per)
     return min, max
-
-#-----------------------------------------------------------------------------------------------------------------------------------
-#SAVE_PATH_FLOAT in RASTERIO_SAVE - funkcija za shranjevanje 
-#-----------------------------------------------------------------------------------------------------------------------------------
-
-def save_path_float(save_path):
-    base, ext = os.path.splitext(str(save_path))
-    return f'{base}_float{ext}'
-
-def rasterio_save(arr, profile, output_data, nodata=None):
-    profile=profile.copy()
-    count = 1 if arr.ndim == 2 else arr.shape[0]
-    profile.update(count=count, dytpe=arr.dtype, nodata=nodata)
-    with rio.open(output_data, 'w', **profile) as dst:
-        if arr.ndim == 2:
-            dst.write(arr, 1)
-        else:
-            dst.write(1) 
 
 #-----------------------------------------------------------------------------------------------------------------------------------
 #MEDIAN FILTER
@@ -97,20 +82,19 @@ def mediana_filter(dem, radius_cell):
 def slrm (dem=data_arr, 
         radius_cell=20, 
         ve_factor=1,
-        output_data=None,
-        save_float=False, 
         no_data=None
-):
+    ):
 
     if np.ndim(dem) == 3: 
         if dem.shape[0] == 1:
-            arr = dem[0]
+            dem[0]
         elif dem.shape[-1] == 1: 
-            arr = arr[:,:, 0]
+            dem[:, :, 0]
         else: 
-            arr = arr[0]
+            dem[0]
 
     dem = np.array(dem, dtype='float32')
+    print(dem)
 
     if np.ndim(dem) !=2:
         raise Exception('mora biti 2d np.array')
@@ -120,41 +104,56 @@ def slrm (dem=data_arr,
         raise Exception('ve_factor mora biti med 10000 in -10000')
 
     dem = dem.astype(np.float64, copy=True)
-    if no_data is not None:
+    if no_data is not None and np.isnan(no_data):
         dem[dem == no_data] = np.nan
-
     
     dem = np.clip(dem)
     dem *= ve_factor
     slrm_out = dem - mediana_filter(dem, radius_cell)
+    print (type(slrm_out))
+    return slrm_out
 
-    if slrm_out.exists():
-        stamp = datetime.now().strftime('%Y%m%d_%H%M') 
-        slrm_path = slrm_out.with_name(f'{slrm_out.stem}_{stamp}{slrm_out.suffix}')
-    
-    
-    out_profile = dict_array['profile'].copy()
-
-    if save_float:
-        rasterio_save(
-            slrm_out,
-            out_profile,
-            output_data=save_path_float(output_data),
-            nodata=np.nan
-        )
-
-
-
-    return slrm_path
+print(np.array(slrm))
 
 #-----------------------------------------------------------------------------------------------------------------------------------
-#SHRANJEVANJE 
+# SHRANJEVANJE
 #-----------------------------------------------------------------------------------------------------------------------------------
 
-for tif in input_dir.rglob('*.tiff'):
-    out = output_dir / f'{tif.stem}_slrm_median.tiff'
-    print('Shranjeno:', slrm(dem=data_arr, output_data=out))
 
+def rasterio_save(arr, profile, output_dir, nodata=None):
+    profile=profile.copy()
+    count = 1 if arr.ndim == 2 else arr.shape[0]
+    profile.update(count=count, dytpe=arr.dtype, nodata=nodata)
+
+    with rio.open(output_dir, 'w', **profile) as dst:
+        if arr.ndim == 2:
+            dst.write(arr, 1)
+        else:
+            dst.write(1) 
+
+
+for tif in input_dir.glob('*.tiff'):
+    stamp = datetime.now().strftime('%Y%m%d_%H%M') 
+    out = output_dir / f'{tif.stem}_slrm_median_{stamp}.tiff'
+    out_raw = output_dir / f'{tif.stem}_raw_slrm.tiff'
+            
+    with rio.open(tif) as src:
+        dem = src.read(1).astype(np.float32)
+        file_nodata=src.nodata
+        profile=src.profile.copy()
+
+    result = slrm(dem, radius_cell=20, ve_factor=1, no_data=file_nodata)
+
+    a_min, a_max = cumulative_min_max(result, min_per=2, max_per=98)
+    clipped = np.clip(result, a_min, a_max)
+    norm = (clipped - a_min) / (a_max - a_min)
+
+    rasterio_save(norm.astype(np.float32), profile, out, nodata=np.nan)
+    print('shranjeno', out)
+
+    rasterio_save(result.astype(np.float32), profile, out_raw, nodata=np.nan)
+    print('shranjeno', out_raw)
+    break
 
 #slrm_saving = slrm(
 #    dem=data_arr,
