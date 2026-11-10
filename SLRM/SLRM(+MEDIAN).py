@@ -59,7 +59,22 @@ def cumulative_min_max(band, min_per=2, max_per=98, zero=False):
     valid = band[mask]
     a_min = np.nanpercentile(valid, min_per)
     a_max = np.nanpercentile(valid, max_per)
-    return min, max
+    return a_min, a_max
+
+#-----------------------------------------------------------------------------------------------------------------------------------
+#MEAN +/- STANDARD DEVIATION X
+#-----------------------------------------------------------------------------------------------------------------------------------
+
+def mean_standard_deviation(band, k=2.0):
+    mean = np.nanmean(band)
+    print(f'mean: {mean}')
+    std = np.nanstd(band)
+    print(f'std: {std}')
+
+    b_min = mean - k * std
+    b_max = mean + k * std
+
+    return b_min, b_max
 
 #-----------------------------------------------------------------------------------------------------------------------------------
 #MEDIAN FILTER
@@ -119,7 +134,6 @@ print(np.array(slrm))
 # SHRANJEVANJE
 #-----------------------------------------------------------------------------------------------------------------------------------
 
-
 def rasterio_save(arr, profile, output_dir, nodata=None):
     profile=profile.copy()
     count = 1 if arr.ndim == 2 else arr.shape[0]
@@ -131,21 +145,23 @@ def rasterio_save(arr, profile, output_dir, nodata=None):
         else:
             dst.write(1) 
 
-
 for tif in input_dir.glob('*.tiff'):
     stamp = datetime.now().strftime('%Y%m%d_%H%M') 
     out = output_dir / f'{tif.stem}_slrm_median_{stamp}.tiff'
-    out_raw = output_dir / f'{tif.stem}_raw_slrm.tiff'
+    out_mean = output_dir / f'{tif.stem}_slrm_mean_{stamp}.tiff'
+    out_raw = output_dir / f'{tif.stem}_raw_slrm_{stamp}.tiff'
             
     with rio.open(tif) as src:
         dem = src.read(1).astype(np.float32)
         file_nodata=src.nodata
         profile=src.profile.copy()
+
     dem [dem == -9999] = np.nan
     if file_nodata is not None and not np.isnan(file_nodata):
-      dem [dem == file_nodata] = np.nan
-      
+        dem [dem == file_nodata] = np.nan
     result = slrm(dem, radius_cell=20, ve_factor=1, no_data=file_nodata)
+
+    print(f'min and max: {np.nanmin(result)} in {np.nanmax(result)}')
 
     a_min, a_max = cumulative_min_max(result, min_per=2, max_per=98)
     clipped = np.clip(result, a_min, a_max)
@@ -153,6 +169,13 @@ for tif in input_dir.glob('*.tiff'):
 
     rasterio_save(norm.astype(np.float32), profile, out, nodata=np.nan)
     print('shranjeno', out)
+
+    b_min, b_max = mean_standard_deviation(result, k=2)
+    clipped = np.clip(result, b_min, b_max)
+    norm_mean = (clipped - b_min) / (b_max - b_min)
+
+    rasterio_save(norm_mean.astype(np.float32), profile, out_mean, nodata=np.nan)
+    print('shranjeno', out_mean)
 
     rasterio_save(result.astype(np.float32), profile, out_raw, nodata=np.nan)
     print('shranjeno', out_raw)
@@ -168,10 +191,6 @@ for tif in input_dir.glob('*.tiff'):
 #)
 
 #slrm_arr = slrm(data_arr, radius_cell=20, ve_factor=1, no_data=data_no_data)
-
-#-----------------------------------------------------------------------------------------------------------------------------------
-#SHRANJEVANJE 
-#-----------------------------------------------------------------------------------------------------------------------------------
 
 #rvt.default.save_raster(
 #    src_raster_path=str(input_data),
