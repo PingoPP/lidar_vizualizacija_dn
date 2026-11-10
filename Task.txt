@@ -17,3 +17,12 @@ dodaj datoteke na github
 
 delaj na opns
 popravi napako v mhs_kernel_size
+
+[dodal slrm, svf-rvt, opns-pos-rvt in opns-neg-rvt, razumevanje teorije opns in svf, posodobil mhs]
+
+11.11 
+
+preglej skozi vse vizualizacije - test and check (če bo spet kak bug, označi in zapiši v blog)
+naredi zemljevid za seminarsko nalogo QGIS 
+preberi članek Embedding Rivers in Triangulated Irregular Networks with Linear Programming
+začni razvijati algoritem za OPNS 
