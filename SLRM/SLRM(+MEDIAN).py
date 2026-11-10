@@ -10,7 +10,7 @@ Algoritem je bil ustvarjen v sklopu diplomske naloge
 Algorithm was made as part of bachelor thesis
 '''
 
-import os 
+#import os 
 from pathlib import Path
 import numpy as np
 import rasterio as rio 
@@ -141,7 +141,10 @@ for tif in input_dir.glob('*.tiff'):
         dem = src.read(1).astype(np.float32)
         file_nodata=src.nodata
         profile=src.profile.copy()
-
+    dem [dem == -9999] = np.nan
+    if file_nodata is not None and not np.isnan(file_nodata):
+      dem [dem == file_nodata] = np.nan
+      
     result = slrm(dem, radius_cell=20, ve_factor=1, no_data=file_nodata)
 
     a_min, a_max = cumulative_min_max(result, min_per=2, max_per=98)
