@@ -1,6 +1,7 @@
 '''
 Avtor / Author: Jaka Dacar 
 Nazadnje spremenjeno / Last changed: 2.11.2026
+Testirano / tested: 11.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - večsmerno senčenje oz. Multidirect Hillshade (v nadaljevanju bom uporabil besedo 'multidirectional hillshade')
 That algorithm was made for visualisation tecnique - Multidirectional hillshade (in continute, I will use word 'multidirectional hillshade')
@@ -30,7 +31,7 @@ input_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga")
 output_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga\Multidirectional_Hillshade\output_data") 
 output_dir.mkdir(parents=True, exist_ok=True)
 
-files = glob.glob('*.tif' or '*.tiff',
+files = glob.glob('*.tiff',
                   root_dir=input_dir,
                   recursive=True)
 files = [f for f in files if '.tiff_checkpoints' not in f]
@@ -130,7 +131,7 @@ def multidirectional_hillshade(
 raster_path = [
     path for path in input_dir.rglob('*')
     if path.is_file()
-    and path.suffix.lower() in {'.tiff' or '.tif'}
+    and path.suffix.lower() in {'.tiff'}
     and output_dir.resolve() not in path.resolve().parents
 ]
 
