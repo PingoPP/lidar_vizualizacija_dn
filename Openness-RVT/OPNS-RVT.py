@@ -1,6 +1,7 @@
 '''
 Avtor / Author: Jaka Dacar 
-Nazadnje spremenjeno / Last changed: 8.11.2026
+Nazadnje spremenjeno / Last changed: 11.11.2026
+Testirano / tested: 11.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - odprtost oz. Openness s pomočjo metode RVT (v nadaljevanju bom uporabil besedo 'opns')
     - v tej kodi bosta definirani positive in negative opns
