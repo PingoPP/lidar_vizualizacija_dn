@@ -1,6 +1,7 @@
 '''
 Avtor / Author: Jaka Dacar 
-Nazadnje spremenjeno / Last changed: 8.11.2026
+Nazadnje spremenjeno / Last changed: 11.11.2026
+Testirano / tested: 11.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - Sky View Factor s pomočjo metode RVT (v nadaljevanju bom uporabil besedo 'svf')
     - v tej kodi bosta definirani positive in negative opns
@@ -25,7 +26,7 @@ import numpy as np
 #-----------------------------------------------------------------------------------------------------------------------------------
 
 input_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga")
-output_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga\Openness-RVT\output_data")
+output_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga\SVF - RVT\output")
 output_dir.mkdir(parents=True, exist_ok=True)
 
 file = glob.glob('*.tiff' or '*.tif',
