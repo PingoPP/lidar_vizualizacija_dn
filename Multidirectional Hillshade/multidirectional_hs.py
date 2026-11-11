@@ -1,6 +1,7 @@
 '''
 Avtor / Author: Jaka Dacar 
-Nazadnje spremenjeno / Last changed: 31.10.2026
+Nazadnje spremenjeno / Last changed: 11.11.2026
+Testirano / tested: 11.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - večsmerno senčenje oz. Multidirect Hillshade (v nadaljevanju bom uporabil besedo 'multidirectional hillshade')
 That algorithm was made for visualisation tecnique - Multidirectional hillshade (in continute, I will use word 'multidirectional hillshade')
@@ -28,7 +29,7 @@ input_dir = Path(r'C:\Users\jakad\OneDrive\Desktop\diplomska naloga')
 output_dir = Path(r'C:\Users\jakad\OneDrive\Desktop\diplomska naloga\Multidirectional_Hillshade\output_data') 
 output_dir.mkdir(parents=True, exist_ok=True)
 
-files = glob.glob('*tif' or '*.tiff',
+files = glob.glob('*tiff' or '*.tif',
                   root_dir=input_dir,
                   recursive=True)
 files=[f for f in files if '.tiff_checkpoitns' not in f]
@@ -89,6 +90,7 @@ def multidirectional_hillshade(
 #na splošno pa koda deluje tako, da je sestavljena iz dveh osnovnih funckij in sicer : azimut (prva številka) in RGB (zadnji tri številke). Na podlagi teh lahko narediš neomejeno različnih kombinacij, ki ti jo lahko prinese sama koda
 #'ime': (azimut, Red, Green, Blue).
 #pri tem n in az nimata nobene povezave, saj sta povsem ločena
+#TOOL FOR PLAYING 
     lights = {          
     
         'warm':   (70, 230, 80, 200),    
@@ -104,6 +106,10 @@ def multidirectional_hillshade(
         '4': (200, 190, 190, 190),        
         '.': (240, 190, 190, 190),       
     }
+
+#'pink': (320, 230, 80, 200),
+#'blue': (150, 40, 120, 255),
+#'gray': (230, 45, 45, 45),
 
 #vključevanje weight z RGB, ki normalizira vsak kanal, da ostanejo v vrednosti med 0 in 1
     rgb = np.zeros(dtm.shape + (3,), dtype=float)
@@ -125,7 +131,7 @@ def multidirectional_hillshade(
 raster_paths = [
     path for path in input_dir.glob('*')
     if path.is_file()
-    and path.suffix.lower() in {'.tif', '.tiff'}
+    and path.suffix.lower() in {'.tiff', '.tif'}
     and output_dir.resolve() not in path.resolve().parents
 ]
 
