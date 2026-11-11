@@ -79,49 +79,31 @@ def hillshade(dtm,
 def multidirectional_hillshade(
                             dtm,  
                             resolution: float = 0.5,
-                            altitude: float = 35.0,
-                            n:int = 12, 
+                            #n:int = 16, 
                             zfactor: float = 2.0) -> np.ndarray:
 
 
-    azimuths = np.linspace(0, 360, n, endpoint=False)
-    az = azimuths
+    #azimuths = np.linspace(0, 360, n, endpoint=False)
+    #az = azimuths
 
-#na splošno pa koda deluje tako, da je sestavljena iz dveh osnovnih funckij in sicer : azimut (prva številka) in RGB (zadnji tri številke). Na podlagi teh lahko narediš neomejeno različnih kombinacij, ki ti jo lahko prinese sama koda
-#'ime': (azimut, Red, Green, Blue).
-#pri tem n in az nimata nobene povezave, saj sta povsem ločena
-#TOOL FOR PLAYING 
+
     lights = {          
-    
-        'warm':   (70, 230, 80, 200),    
-        's': (320, 230, 80, 200),         
-        'a': (300, 230, 80, 200),         
-        'k': (280, 230, 80, 200),         
-        'x': (120, 40, 120, 255),         
-        'y': (140, 40, 120, 255),      
-        'z': (160, 40, 120, 255),        
-        'f': (180, 40, 120, 255),       
-        'fully1': (0,  190, 190, 190),   
-        'g': (210, 190, 190, 190),        
-        '4': (200, 190, 190, 190),        
-        '.': (240, 190, 190, 190),       
+        'gold': {'azimuth': 210, 'altitude': 70, 'r': 255, 'g': 170, 'b': 40},
+        'blue': {'azimuth': 335, 'altitude': 25, 'r': 40, 'g': 110, 'b': 225},
+        'gray': {'azimuth': 60, 'altitude': 10, 'r': 70, 'g': 90, 'b': 120},      
     }
-
-#'pink': (320, 230, 80, 200),
-#'blue': (150, 40, 120, 255),
-#'gray': (230, 45, 45, 45),
 
 #vključevanje weight z RGB, ki normalizira vsak kanal, da ostanejo v vrednosti med 0 in 1
     rgb = np.zeros(dtm.shape + (3,), dtype=float)
-    weight = np.zeros(3, dtype=float)
-    for az, r, g, b in lights.values():
+    weight = np.zeros(3, dtype=np.float32)
+    for cfg in lights.values():
         hs = hillshade(dtm,
-                    azimuth=az,
-                    altitude=altitude,
+                    azimuth=cfg['azimuth'],
+                    altitude=cfg['altitude'],
                     cellsize_x=resolution,
                     cellsize_y=resolution,
                     zfactor=zfactor) / 255.0
-        color = np.array([r, g, b]) / 255.0
+        color = np.array([cfg['r'], cfg['g'], cfg['b']], dtype=float)
         rgb += hs[..., None] * color
         weight += color
 
@@ -131,7 +113,7 @@ def multidirectional_hillshade(
 raster_paths = [
     path for path in input_dir.glob('*')
     if path.is_file()
-    and path.suffix.lower() in {'.tiff', '.tif'}
+    and path.suffix.lower() in {'.tiff'}
     and output_dir.resolve() not in path.resolve().parents
 ]
 
@@ -182,8 +164,6 @@ def rasterio_process(tif):
     mhs= multidirectional_hillshade(
         dtm, 
         resolution=0.5,
-        altitude=35,
-        n=12,
         zfactor=2.0
     )
 
