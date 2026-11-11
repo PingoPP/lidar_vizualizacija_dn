@@ -1,6 +1,6 @@
 '''
 Avtor / Author: Jaka Dacar 
-Nazadnje spremenjeno / Last changed: 30.10.2026
+Nazadnje spremenjeno / Last changed: 11.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - senčenja oz. hillshade (v nadaljevanju bom uporabil besedo 'hillshade')
 That algorithm was made for visualisation tecnique - hillshade (in continute, I will use word 'hillshade')
@@ -27,7 +27,7 @@ input_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga")
 output_dir = Path(r"C:\Users\jakad\OneDrive\Desktop\diplomska naloga\Hillshade\output_data")
 output_dir.mkdir(parents=True, exist_ok=True)
 
-files = glob.glob('*.tif' or '*.tiff',
+files = glob.glob('*.tiff',
                   root_dir=input_dir,
                   recursive=True)
 files = [f for f in files if '.tiff_checkpoints' not in f]
@@ -96,7 +96,7 @@ def hillshade(
 raster_paths = [
     path for path in input_dir.rglob('*')
     if path.is_file()
-    and path.suffix.lower() in {'.tif', '.tiff'}
+    and path.suffix.lower() in {'.tiff', '.tif'}
     and output_dir.resolve() not in path.resolve().parents
 ]
 
