@@ -1,6 +1,7 @@
 '''
 Avtor / Author: Jaka Dacar 
 Nazadnje spremenjeno / Last changed: 10.11.2026
+Testirano / tested: 11.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - Simple Local Relief Model (v nadaljevanju bom uporabil besedo 'SLRM')
 That algorithm was made for visualisation tecnique - Simple Local Relief Model (in continute, I will use word 'SLRM')
