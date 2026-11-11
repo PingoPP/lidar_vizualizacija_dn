@@ -1,6 +1,7 @@
 '''
 Avtor / Author: Jaka Dacar 
 Nazadnje spremenjeno / Last changed: 30.10.2026
+Testirano / tested: 11.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - senčenja oz. hillshade s pomočjo RVT oz. Relief Visualization Toolbox (v nadaljevanju bom uporabil besedo 'hillshade')
 That algorithm was made for visualisation tecnique - hillshade with the help by RVT or Relief Visualization Toolbox (in continute, I will use word 'hillshade')
