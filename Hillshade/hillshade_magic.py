@@ -1,6 +1,7 @@
 '''
 Avtor / Author: Jaka Dacar 
 Nazadnje spremenjeno / Last changed: 11.11.2026
+Testirano / tested: 11.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - senčenja oz. hillshade (v nadaljevanju bom uporabil besedo 'hillshade')
 That algorithm was made for visualisation tecnique - hillshade (in continute, I will use word 'hillshade')
