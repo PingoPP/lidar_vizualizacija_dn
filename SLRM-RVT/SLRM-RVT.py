@@ -1,6 +1,7 @@
 '''
 Avtor / Author: Jaka Dacar 
-Nazadnje spremenjeno / Last changed: 28.10.2026
+Nazadnje spremenjeno / Last changed: 11.11.2026
+Testirano / tested: 11.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - Simple Local Relief Model s pomočjo RVT oz. Relief Visualization Toolbox (v nadaljevanju bom uporabil besedo 'SLRM')
 That algorithm was made for visualisation tecnique - Simple Local Relief Model with the help by RVT or Relief Visualization Toolbox (in continute, I will use word 'SLRM')
@@ -38,7 +39,7 @@ out_dir.mkdir(parents=True, exist_ok=True)
 
 #print(i)
 
-files = glob.glob('*.tiff' or '*.tif' or '*.TIFF' or '*.TIF',
+files = glob.glob('*.tiff',
                   root_dir=input_dir,
                   recursive=True)
 files=[f for f in files if '.tiff_checkpoints' not in f]
@@ -93,6 +94,7 @@ def run_slrm(input_path,
 # SHRANJEVANJE 
 #---------------------------------------------------------------
 
-for tif in input_dir.glob('*.tif*'):
-    out = out_dir / f'{tif.stem}_slrm_r20.tiff'
+for tif in input_dir.glob('*.tiff*'):
+    out = out_dir / f'{tif.stem}_slrm.tiff'
     print('Shranjeno:', run_slrm(tif, out, radius_cell=20))
+    break
