@@ -1,6 +1,7 @@
 '''
 Avtor / Author: Jaka Dacar 
 Nazadnje spremenjeno / Last changed: 31.10.2026
+Testirano / tested: 11.11.2026
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - večsmerno senčenje oz. Multidirect Hillshade s pomočjo RVT oz. Relief Visualization Toolbox(v nadaljevanju bom uporabil besedo 'multidirectional hillshade')
 That algorithm was made for visualisation tecnique - Multidirectional hillshade with help by RVT or Relief Visualization Toolbox (in continute, I will use word 'multidirectional hillshade')
@@ -84,7 +85,7 @@ def mh(
     )
 
     if output_data.exists():
-      stamp=datetime.now().strftime('%Y%m%d_°%H%M')
+      stamp=datetime.now().strftime('%Y%m%d_%H%M')
       output_data = output_data.with_name(f'{output_data.stem}_{stamp}{output_data.suffix}')
 
     rvt.default.save_raster(
