@@ -26,3 +26,10 @@ preglej skozi vse vizualizacije - test and check (če bo spet kak bug, označi i
 naredi zemljevid za seminarsko nalogo QGIS 
 preberi članek Embedding Rivers in Triangulated Irregular Networks with Linear Programming
 začni razvijati algoritem za OPNS 
+
+
+14.11
+
+dodaj vrstico in poglej razliko np.pad
+potrdi temo za diplomsko nalogo
+histogram stretch
