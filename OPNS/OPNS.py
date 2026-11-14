@@ -1,120 +1,130 @@
+'''
+Avtor / Author: Jaka Dacar
+Nazadnje spremenjeno / Last changed: 14.11.2026
+Testirano / tested: NAN
+
+Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - Openness (v nadaljevanju bom uporabil besedo 'OPNS')
+That algorithm was made for visualisation tecnique - Openness (in continute, I will use word 'OPNS')
+
+
+Algoritem je bil ustvarjen v sklopu diplomske naloge
+Algorithm was made as part of bachelor thesis
+'''
+
 from pathlib import Path
 from datetime import datetime
-import glob
 import rasterio as rio
 import numpy as np
+import glob
 
-
+#-----------------------------------------------------------------------------------------------------------------------------------
+#INPUT in OUTPUT
+#-----------------------------------------------------------------------------------------------------------------------------------
 
 input_dir = Path(r'C:\Users\jakad\OneDrive\Desktop\diplomska naloga')
 output_dir = Path(r'C:\Users\jakad\OneDrive\Desktop\diplomska naloga\OPNS\output')
-output_dir.mkdir(parents=True, bool=False)
+output_dir.mkdir(parents=True, exist_ok=True)
 
-files = glob.glob('*.tiff',
-                  root_dir=input_dir,
-                  recursive=True)
+#-----------------------------------------------------------------------------------------------------------------------------------
+#OPNS - computing and making dream true!
+#-----------------------------------------------------------------------------------------------------------------------------------
 
-files = [f for f in files if ('tiff checkpoints') if not files]
+def opns_comp(
+        dem,
+        radius_max: int = 10,                #L_max [v dnevniku]
+        radius_min: int = 1,                 #L_min [v dnevniku]
+        n_directions: int = 8,               #D [v dnevniku]
+        ):
 
-input_files = input_dir / files[0]
+    pad = int(np.ceil(radius_max))
+    height = np.pad(dem, pad, mode='edge')   # če edge da nezaželen rezultat, probaj 'reflect'
 
-with rio.open(input_files) as src:
-    dem = src.read(1).astype(np.float32)
-    profile = src.profile
-    nodata = src.nodata
-    ext = [
-        src.bounds.left,
-        src.bounds.right,
-        src.bounds.bottom,
-        src.bounds.top, 
-    ]
-
+# dodaj izračun [preveč je bilo napak]
 
 def opns(
         dem,
-        radius_max: float = 10,              #L_max
-        radius_min: float = 1,               #L_min
-        n_directions: float = 8,             #D
-        #a_main_directions=0.315,
-        #a_poly_level=4,
-        #a_min_weight=0.4
+        resolution=0.5,
+        radius_min=1,
+        radius_max=10,
+        n_directions=8,
+        ve_factor=1,
+        no_data=None
         ):
 
-    height = np.pad(dem, radius_max, mode='reflect')
-    move = np.linspace(n_directions, radius_max_px = radius_max, radius_min_px = radius_min)
-    if opns_comp: 
-        opns_out - height * 0
-    else: 
-        opns_comp = None
+    if np.ndim(dem) == 3:
+        if dem.shape[0] == 1:
+            dem = dem[0]
+        elif dem.shape[-1] == 1:
+            dem = dem[:, :, 0]
+        else:
+            dem = dem[0]
 
-    for i_dir, n_directions in enumerate(move):
-        maximum_slope = np.zeros(height.shape, i_dir, dtype=np.float32) - 1000
-        for i_rad, radius in enumerate(move[n_directions]['distances']):
-            shift_index = move[n_directions]['shift'][i_rad]
-            _ = (np.roll(height, shift_index, axis=(0,1))) - height / radius
-            max_slope = np.fmax(maximum_slope, _)
-        max_slope = np.arctan(max_slope)
-        if opns_comp:
-            opns_out=opns_out + max_slope
-    if opns_comp:
-        opns_out = np.rad2deg(0.5 * np.pi - (opns_out [radius_max :-radius_max, radius_max :-radius_max] / n_directions))
+    dem = np.asarray(dem, dtype=np.float32)
 
-    dict_opns = {opns}
+    if dem.ndim != 2:
+        raise ValueError("Input DEM must be a 2D array.")
+
+    if no_data is not None:
+        dem = dem.copy()
+        dem[dem == no_data] = np.nan
+    no_data = np.isnan(dem)
+
+    dem = dem * ve_factor
+    dem = dem / resolution
+    rad_min = max(np.round(radius_max * radius_min), 1)
+    rad_max = max(np.round(radius_max * radius_min), 10)
+
+    dict_opns = opns_comp(
+        dem=dem,
+        radius_max=int(rad_max),
+        radius_min=int(rad_min),
+        n_directions=n_directions,
+    )
+
+    for dem in dict_opns.values():
+        dem[no_data] = np.nan
 
     return dict_opns
 
-        
 
-raster_path = [
-    path for path in input_dir.rglob('*.tiff')
-    if path.is_file()
-    and path.suffix_lower() in {'.tiff'}
-    and output_dir.resolve() not in path.resolve().parents
-]
+#-----------------------------------------------------------------------------------------------------------------------------------
+# SHRANJEVANJE
+#-----------------------------------------------------------------------------------------------------------------------------------
 
+def rasterio_save(dem, profile, output_path, no_data=None):
+    profile = profile.copy()
+    count = 1 
+    profile.update(count=count, dtype=dem.dtype, nodata=no_data)
 
+    with rio.open(output_path, "w", **profile) as dst:
+        if dem.ndim == 2:
+            dst.write(dem, 1)
+        else:
+            dst.write(dem)
 
-def make_output(tif):
-    out_put=output_dir / f'{tif.stem}_OPNS.tiff'
-    if out_put.exists():
-        stamp = datetime.now().strftime('%Y%m%d_%H%M')
-        out_put = out_put.name(f'{out_put}_{stamp}{out_put.suffix}')
-    return make_output
+for tif in sorted(input_dir.glob("*.tiff")):
+    stamp = datetime.now().strftime("%Y%m%d_%H%M")
+    out = output_dir / f"{tif.stem}_opns_{stamp}.tiff"
 
-def rasterio_process(tif):
     with rio.open(tif) as src:
-        dem = src.read(1).astype(np.float32).filled(np.nan)
-        profile=src.profile.copy()
+        dem = src.read(1).astype(np.float32)
+        no_data = src.nodata
+        profile = src.profile.copy()
 
+    dem[dem == -9999] = np.nan
+    if no_data is not None and not np.isnan(no_data):
+        dem[dem == no_data] = np.nan
 
-    opns = opns(
-        tif, 
-        resolution=0.5
+    results = opns(
+        dem,
+        resolution=0.5,
+        radius_min=1,
+        radius_max=10,
+        n_directions=8,
+        no_data=no_data
     )
 
-    out = make_output(tif)
-    with rio.open(out,
-                  'w',
-                  **profile) as dst:
-        dst.write(opns)
-
-
-    return out
-
-if not raster_path:
-    print(f'{ValueError}, sorry we do not find a data')
-else:
-    True
-
-for tif in raster_path:
-    print(f'Shranjeno {rasterio_process(tif)}')
-    break
-
-
-
-
-
-
-
-
-
+    opns_arr = results["opns"].astype(np.float32)
+    rasterio_save(opns_arr, profile, out, no_data=np.nan)
+    print("shranjeno", out)
+    break  
