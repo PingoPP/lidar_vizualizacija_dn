@@ -124,7 +124,7 @@ for tif in sorted(input_dir.glob("*.tiff")):
         no_data=no_data
     )
 
-    opns_arr = results["opns"].astype(np.float32)
-    rasterio_save(opns_arr, profile, out, no_data=np.nan)
+    dem_opns = results.astype(np.float32)
+    rasterio_save(dem_opns, profile, out, no_data=np.nan)
     print("shranjeno", out)
     break  
