@@ -34,12 +34,25 @@ def opns_comp(
         radius_max: int = 10,                #L_max [v dnevniku]
         radius_min: int = 1,                 #L_min [v dnevniku]
         n_directions: int = 8,               #D [v dnevniku]
-        ):
+):
 
     pad = int(np.ceil(radius_max))
     height = np.pad(dem, pad, mode='edge')   # če edge da nezaželen rezultat, probaj 'reflect'
 
-# dodaj izračun [preveč je bilo napak]
+    azimuths_deg = np.linspace(0, 360, n_directions, endpoints=False)
+    azimuths_rad = np.radians(azimuths_deg)
+
+    rad = np.arrange(radius_min, radius_max + 1)
+    for az_rad in azimuths_rad:
+        dx = np.sin(az_rad)
+        dy = -np.cos(az_rad)
+
+    for r in radi:
+        x = int(np.round(r * dx))
+        y = int(np.round(r * dy))
+
+#---------------------------------------------
+#---------------------------------------------
 
 def opns(
         dem,
