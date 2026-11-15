@@ -1,6 +1,6 @@
 '''
 Avtor / Author: Jaka Dacar
-Nazadnje spremenjeno / Last changed: 14.11.2026
+Nazadnje spremenjeno / Last changed: 15.11.2026
 Testirano / tested: NAN
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - Openness (v nadaljevanju bom uporabil besedo 'OPNS')
@@ -9,6 +9,8 @@ That algorithm was made for visualisation tecnique - Openness (in continute, I w
 
 Algoritem je bil ustvarjen v sklopu diplomske naloge
 Algorithm was made as part of bachelor thesis
+
+Algoritem sicer dela, ampak ne daje pa želenih vizualizacij - potrebno je še spremeniti strukturo!
 '''
 
 from pathlib import Path
@@ -38,7 +40,8 @@ def opns_comp(
 ):
 
     pad = int(np.ceil(radius_max))
-    height = np.pad(dem, pad, mode='edge')   # če edge da nezaželen rezultat, probaj 'reflect'
+    height = np.pad(dem, pad, mode='reflect')   # če edge da nezaželen rezultat, probaj 'edge'
+
 
     rows, columns = dem.shape
     center = height[pad : pad + rows, pad :  pad + columns]
@@ -53,47 +56,38 @@ def opns_comp(
     #E = 270,
     #NE = 315
     #}
-    
+
     azimuths_deg = np.linspace(0, 360, n_directions, endpoint=False)
     azimuths_rad = np.radians(azimuths_deg)
     radi = np.arange(radius_min, radius_max + 1)
 
-    max_angles_per_dir=[]
-    min_angles_per_dir=[]
+    opns_sum = np.zeros(dem.shape)
+
 
     for az_rad in azimuths_rad:
         dx = np.sin(az_rad)
         dy = -np.cos(az_rad)
 
-        max_angle = np.full(dem.shape, -np.inf)
-        min_angle = np.full(dem.shape, np.inf)
-    
+        max_angle = np.full(dem.shape, -np.inf)    
 
     for r in radi:
         x = int(np.round(r * dx))
         y = int(np.round(r * dy))
+        if x == 0 and y == 0:
+            continue
 
         neighbour = height [
-            pad + x : pad + x + rows,
-            pad + y : pad + y + columns,
+            pad + y : pad + y + rows,
+            pad + x : pad + x + columns,
         ]
 
-        dict = np.hypot(x, y) * cell_size
-        angle = np.arctan2(neighbour - center, dict)
-        
+        dist = np.hypot(x, y) * cell_size
+        angle = np.arctan2(neighbour - center, dist)
         angle_max = np.maximum(max_angle, angle)
-        angle_min = np.minimum(min_angle, angle)
 
-        max_angles_per_dir.append(angle_max)
-        min_angles_per_dir.append(angle_min)
+    opns_sum += np.pi / 2 - angle_max
 
-    #zenith
-    positive_opns = 90.0 - np.degrees(np.mean(max_angles_per_dir, axis=0))
-
-    #nadir
-    negative_opns = 90.0 + np.degrees(np.mean(min_angles_per_dir, axis=0))
-
-    return positive_opns, negative_opns
+    return opns_sum / n_directions #nujno mora biti v PIKSEL!!!!
 
 def opns(
         dem,
@@ -125,21 +119,36 @@ def opns(
 
     dem = dem * ve_factor
     dem = dem / resolution
-    rad_min = min(int(np.round(radius_min)), 1)
-    rad_max = max(int(np.round(radius_max)), 10)
+    rad_min = max(int(np.round(radius_min)), 1)
+    rad_max = min(int(np.round(radius_max)), 10)
     
     #dodaj še pos in neg opns!!!!
 
-    dict_opns = opns_comp(
-        dem=dem,
+    array = np.array(dem)
+
+    pos_opns = opns_comp(
+        dem=array,
         radius_max=rad_max,
         radius_min=rad_min,
-        n_directions=n_directions
+        n_directions=n_directions,
+        cell_size=resolution,
     )
 
-  
-    return dict_opns
+    neg_opns = opns_comp(
+        dem=-array,
+        radius_max=rad_max,
+        radius_min=rad_min,
+        n_directions=n_directions,
+        cell_size=resolution,
+    )
 
+    mask = np.isnan(dem)
+    pos_opns[mask] = np.nan
+    neg_opns[mask] = np.nan
+
+    return pos_opns, neg_opns
+
+  
 
 #-----------------------------------------------------------------------------------------------------------------------------------
 # SHRANJEVANJE
@@ -158,7 +167,8 @@ def rasterio_save(dem, profile, output_path, no_data=None):
 
 for tif in sorted(input_dir.glob("*.tiff")):
     stamp = datetime.now().strftime("%Y%m%d_%H%M")
-    out = output_dir / f"{tif.stem}_opns_{stamp}.tiff"
+    out_pos = output_dir / f"{tif.stem}_pos_opns_{stamp}.tiff"
+    out_neg = output_dir / f"{tif.stem}_neg_opns_{stamp}.tiff"
 
     with rio.open(tif) as src:
         dem = src.read(1).astype(np.float32)
@@ -169,7 +179,7 @@ for tif in sorted(input_dir.glob("*.tiff")):
     if no_data is not None and not np.isnan(no_data):
         dem[dem == no_data] = np.nan
 
-    pos_opns, neg_opns = opns(
+    pos_opnss, neg_opnss = opns(
         dem,
         resolution=0.5,
         radius_min=1,
@@ -178,11 +188,11 @@ for tif in sorted(input_dir.glob("*.tiff")):
         no_data=no_data
     )
 
-    dem_opns = pos_opns.astype(np.float32)
-    rasterio_save(dem_opns, profile, out, no_data=np.nan)
+    pos_opns = pos_opnss.astype(np.float32)
+    rasterio_save(pos_opns, profile, out_pos, no_data=np.nan)
 
-    dem_opns = neg_opns.astype(np.float32)
-    rasterio_save(dem_opns, profile, out, no_data=np.nan)
+    neg_opns = neg_opnss.astype(np.float32)
+    rasterio_save(neg_opns, profile, out_neg, no_data=np.nan)
 
-    print("shranjeno", out)
+    print("shranjeno", out_pos, out_neg)
     break  
