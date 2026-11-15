@@ -34,25 +34,66 @@ def opns_comp(
         radius_max: int = 10,                #L_max [v dnevniku]
         radius_min: int = 1,                 #L_min [v dnevniku]
         n_directions: int = 8,               #D [v dnevniku]
+        cell_size: int = 0.5
 ):
 
     pad = int(np.ceil(radius_max))
     height = np.pad(dem, pad, mode='edge')   # če edge da nezaželen rezultat, probaj 'reflect'
 
-    azimuths_deg = np.linspace(0, 360, n_directions, endpoints=False)
-    azimuths_rad = np.radians(azimuths_deg)
+    rows, columns = dem.shape
+    center = height[pad : pad + rows, pad :  pad + columns]
 
-    rad = np.arrange(radius_min, radius_max + 1)
+    #directions = {
+    #N = 0,
+    #NW = 45,
+    #W = 90,
+    #SW = 135,
+    #S = 180,
+    #SE = 225,
+    #E = 270,
+    #NE = 315
+    #}
+    
+    azimuths_deg = np.linspace(0, 360, n_directions, endpoint=False)
+    azimuths_rad = np.radians(azimuths_deg)
+    radi = np.arange(radius_min, radius_max + 1)
+
+    max_angles_per_dir=[]
+    min_angles_per_dir=[]
+
     for az_rad in azimuths_rad:
         dx = np.sin(az_rad)
         dy = -np.cos(az_rad)
+
+        max_angle = np.full(dem.shape, -np.inf)
+        min_angle = np.full(dem.shape, np.inf)
+    
 
     for r in radi:
         x = int(np.round(r * dx))
         y = int(np.round(r * dy))
 
-#---------------------------------------------
-#---------------------------------------------
+        neighbour = height [
+            pad + x : pad + x + rows,
+            pad + y : pad + y + columns,
+        ]
+
+        dict = np.hypot(x, y) * cell_size
+        angle = np.arctan2(neighbour - center, dict)
+        
+        angle_max = np.maximum(max_angle, angle)
+        angle_min = np.minimum(min_angle, angle)
+
+        max_angles_per_dir.append(angle_max)
+        min_angles_per_dir.append(angle_min)
+
+    #zenith
+    positive_opns = 90.0 - np.degrees(np.mean(max_angles_per_dir, axis=0))
+
+    #nadir
+    negative_opns = 90.0 + np.degrees(np.mean(min_angles_per_dir, axis=0))
+
+    return positive_opns, negative_opns
 
 def opns(
         dem,
@@ -84,19 +125,17 @@ def opns(
 
     dem = dem * ve_factor
     dem = dem / resolution
-    rad_min = max(np.round(radius_max * radius_min), 1)
+    rad_min = min(np.round(radius_max * radius_min), 1)
     rad_max = max(np.round(radius_max * radius_min), 10)
 
     dict_opns = opns_comp(
         dem=dem,
         radius_max=int(rad_max),
         radius_min=int(rad_min),
-        n_directions=n_directions,
+        n_directions=n_directions
     )
 
-    for dem in dict_opns.values():
-        dem[no_data] = np.nan
-
+  
     return dict_opns
 
 
@@ -128,7 +167,7 @@ for tif in sorted(input_dir.glob("*.tiff")):
     if no_data is not None and not np.isnan(no_data):
         dem[dem == no_data] = np.nan
 
-    results = opns(
+    pos_opns, neg_opns = opns(
         dem,
         resolution=0.5,
         radius_min=1,
@@ -137,7 +176,11 @@ for tif in sorted(input_dir.glob("*.tiff")):
         no_data=no_data
     )
 
-    dem_opns = results.astype(np.float32)
+    dem_opns = pos_opns.astype(np.float32)
     rasterio_save(dem_opns, profile, out, no_data=np.nan)
+
+    dem_opns = neg_opns.astype(np.float32)
+    rasterio_save(dem_opns, profile, out, no_data=np.nan)
+
     print("shranjeno", out)
     break  
