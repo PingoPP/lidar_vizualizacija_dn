@@ -125,13 +125,15 @@ def opns(
 
     dem = dem * ve_factor
     dem = dem / resolution
-    rad_min = min(np.round(radius_max * radius_min), 1)
-    rad_max = max(np.round(radius_max * radius_min), 10)
+    rad_min = min(int(np.round(radius_min)), 1)
+    rad_max = max(int(np.round(radius_max)), 10)
+    
+    #dodaj še pos in neg opns!!!!
 
     dict_opns = opns_comp(
         dem=dem,
-        radius_max=int(rad_max),
-        radius_min=int(rad_min),
+        radius_max=rad_max,
+        radius_min=rad_min,
         n_directions=n_directions
     )
 
