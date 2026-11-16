@@ -36,6 +36,7 @@ def opns_comp(
         radius_max: int = 10,                #L_max [v dnevniku]
         radius_min: int = 1,                 #L_min [v dnevniku]
         n_directions: int = 8,               #D [v dnevniku]
+        #ve_factor: int = 1.0
         cell_size: int = 0.5
 ):
 
