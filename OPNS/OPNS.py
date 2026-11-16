@@ -85,6 +85,8 @@ def opns_comp(
         angle = np.arctan2(neighbour - center, dist)
         angle_max = np.maximum(max_angle, angle)
 
+#dodaj še definicijo za neg_opns, da loči in naredi temu primeren izačun
+
     opns_sum += np.pi / 2 - angle_max
 
     return opns_sum / n_directions #nujno mora biti v PIKSEL!!!!
