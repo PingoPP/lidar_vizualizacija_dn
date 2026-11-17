@@ -1,6 +1,6 @@
 '''
 Avtor / Author: Jaka Dacar
-Nazadnje spremenjeno / Last changed: 15.11.2026
+Nazadnje spremenjeno / Last changed: 17.11.2026
 Testirano / tested: NAN
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - Openness (v nadaljevanju bom uporabil besedo 'OPNS')
@@ -10,7 +10,7 @@ That algorithm was made for visualisation tecnique - Openness (in continute, I w
 Algoritem je bil ustvarjen v sklopu diplomske naloge
 Algorithm was made as part of bachelor thesis
 
-Algoritem sicer dela, ampak ne daje pa želenih vizualizacij - potrebno je še spremeniti strukturo!
+Error Function
 '''
 
 from pathlib import Path
@@ -33,39 +33,51 @@ output_dir.mkdir(parents=True, exist_ok=True)
 
 def opns_comp(
         dem,
-        radius_max: int = 10,                #L_max [v dnevniku]
-        radius_min: int = 1,                 #L_min [v dnevniku]
-        n_directions: int = 8,               #D [v dnevniku]
-        #ve_factor: int = 1.0
-        cell_size: int = 0.5
-):
+        cell_size: float = 0.5,       
+        radius_max: int = 10,
+        radius_min: int = 1,
+        n_directions: int = 8
+        ):
 
     pad = int(np.ceil(radius_max))
-    height = np.pad(dem, pad, mode='reflect')   # če edge da nezaželen rezultat, probaj 'edge'
+    height = np.pad(dem, pad, mode='constant', constant_values=np.nan)   # če edge da nezaželen rezultat, probaj 'edge'
 
 
     rows, columns = dem.shape
     center = height[pad : pad + rows, pad :  pad + columns]
 
-    #directions = {
-    #N = 0,
-    #NW = 45,
-    #W = 90,
-    #SW = 135,
-    #S = 180,
-    #SE = 225,
-    #E = 270,
-    #NE = 315
-    #}
+    def elevation ( radius_max: int = 10,                #L_max [v dnevniku]
+                    radius_min: int = 1,                 #L_min [v dnevniku]
+                    n_directions: int = 8                #D [v dnevniku]   
+    ):
+                                            
+        #directions = {
+        #N = 0,
+        #NW = 45,
+        #W = 90,
+        #SW = 135,
+        #S = 180,
+        #SE = 225,
+        #E = 270,
+        #NE = 315
+        #}
+        
+        azimuths_deg = np.linspace(0, 360, n_directions, endpoint=False)
+        azimuths_rad = np.radians(azimuths_deg)
+        radi = np.arange(radius_min, radius_max + 1)
 
-    azimuths_deg = np.linspace(0, 360, n_directions, endpoint=False)
-    azimuths_rad = np.radians(azimuths_deg)
-    radi = np.arange(radius_min, radius_max + 1)
+        return azimuths_rad, radi
 
-    opns_sum = np.zeros(dem.shape)
+    azimuths_rad, radi = elevation(
+        radius_max=radius_max,
+        radius_min=radius_min,
+        n_directions=n_directions
+    )
 
+    opns_sum = np.zeros(dem.shape, dtype=np.float32)
+    count = np.zeros(dem.shape, dtype=np.int32)
 
-    for az_rad in azimuths_rad:
+    for az_rad in elevation:
         dx = np.sin(az_rad)
         dy = -np.cos(az_rad)
 
@@ -86,11 +98,12 @@ def opns_comp(
         angle = np.arctan2(neighbour - center, dist)
         angle_max = np.maximum(max_angle, angle)
 
-#dodaj še definicijo za neg_opns, da loči in naredi temu primeren izačun
+    valid = np.isfinite(max_angle)
+    opns_sum +- np.where(valid, np.pi / 2 - angle_max, 0)
+    count += valid
 
-    opns_sum += np.pi / 2 - angle_max
-
-    return opns_sum / n_directions #nujno mora biti v PIKSEL!!!!
+    with np.errstate(invalid='ignore', divide='ignore'):
+        return np.where(count > 0, opns_sum / count, np.nan)
 
 def opns(
         dem,
