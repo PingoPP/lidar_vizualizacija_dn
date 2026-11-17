@@ -10,7 +10,7 @@ That algorithm was made for visualisation tecnique - Openness (in continute, I w
 Algoritem je bil ustvarjen v sklopu diplomske naloge
 Algorithm was made as part of bachelor thesis
 
-Error Function
+Problem: vizualizacija mi ne prikaže + min_elevatio je enako kot prikazuje dejanski max_elevation, samo, da je negativno
 '''
 
 from pathlib import Path
@@ -40,10 +40,14 @@ def opns_comp(
         ):
 
     pad = int(np.ceil(radius_max))
-    height = np.pad(dem, pad, mode='constant', constant_values=np.nan)   # če edge da nezaželen rezultat, probaj 'edge'
+
+    #hb
+    height = np.pad(dem, pad, mode='reflect')   # če edge da nezaželen rezultat, probaj 'edge'
 
 
     rows, columns = dem.shape
+
+    #ha
     center = height[pad : pad + rows, pad :  pad + columns]
 
     def elevation ( radius_max: int = 10,                #L_max [v dnevniku]
@@ -74,10 +78,11 @@ def opns_comp(
         n_directions=n_directions
     )
 
-    opns_sum = np.zeros(dem.shape, dtype=np.float32)
+    nadir_sum = np.zeros(dem.shape, dtype=np.float32)
+    zenith_sum = np.zeros(dem.shape, dtype=np.float32)
     count = np.zeros(dem.shape, dtype=np.int32)
 
-    for az_rad in elevation:
+    for az_rad in azimuths_rad:
         dx = np.sin(az_rad)
         dy = -np.cos(az_rad)
 
@@ -94,16 +99,28 @@ def opns_comp(
             pad + x : pad + x + columns,
         ]
 
+        # hor_dist = ((ia-ib)**2 + (ja-jb)**2)**2
         dist = np.hypot(x, y) * cell_size
+
+        #theta = tan^-1((hb - ha) / hor_dist)
         angle = np.arctan2(neighbour - center, dist)
         angle_max = np.maximum(max_angle, angle)
 
-    valid = np.isfinite(max_angle)
-    opns_sum +- np.where(valid, np.pi / 2 - angle_max, 0)
-    count += valid
+        zenith = np.pi / 2 - angle_max #Positive
+        nadir = np.pi / 2 + angle_max #Negative
 
-    with np.errstate(invalid='ignore', divide='ignore'):
-        return np.where(count > 0, opns_sum / count, np.nan)
+        valid = np.isfinite(max_angle)
+        zenith_sum += np.where(valid, zenith, 0)
+        nadir_sum += np.where(valid, nadir, 0) 
+        count += valid
+
+        with np.errstate(invalid='ignore', divide='ignore'):
+            pos = np.where(count > 0, zenith_sum / count, np.nan)
+            neg = np.where(count > 0, nadir_sum / count, np.nan)
+
+
+        return pos, neg 
+
 
 def opns(
         dem,
@@ -134,24 +151,11 @@ def opns(
     no_data = np.isnan(dem)
 
     dem = dem * ve_factor
-    dem = dem / resolution
     rad_min = max(int(np.round(radius_min)), 1)
     rad_max = min(int(np.round(radius_max)), 10)
-    
-    #dodaj še pos in neg opns!!!!
 
-    array = np.array(dem)
-
-    pos_opns = opns_comp(
-        dem=array,
-        radius_max=rad_max,
-        radius_min=rad_min,
-        n_directions=n_directions,
-        cell_size=resolution,
-    )
-
-    neg_opns = opns_comp(
-        dem=-array,
+    pos_opns, neg_opns = opns_comp(
+        dem=dem,
         radius_max=rad_max,
         radius_min=rad_min,
         n_directions=n_directions,
@@ -195,8 +199,10 @@ for tif in sorted(input_dir.glob("*.tiff")):
     if no_data is not None and not np.isnan(no_data):
         dem[dem == no_data] = np.nan
 
-    pos_opnss, neg_opnss = opns(
-        dem,
+    array = -dem
+
+    pos_opnss = opns(
+        dem=dem,
         resolution=0.5,
         radius_min=1,
         radius_max=10,
@@ -204,10 +210,20 @@ for tif in sorted(input_dir.glob("*.tiff")):
         no_data=no_data
     )
 
-    pos_opns = pos_opnss.astype(np.float32)
+    neg_opnss = opns(
+        dem=array,
+        resolution=0.5,
+        radius_min=1,
+        radius_max=10,
+        n_directions=8,
+        no_data=no_data
+        
+    )
+
+    pos_opns = pos_opnss[0].astype(np.float32)
     rasterio_save(pos_opns, profile, out_pos, no_data=np.nan)
 
-    neg_opns = neg_opnss.astype(np.float32)
+    neg_opns = neg_opnss[0].astype(np.float32)
     rasterio_save(neg_opns, profile, out_neg, no_data=np.nan)
 
     print("shranjeno", out_pos, out_neg)
