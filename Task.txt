@@ -33,7 +33,7 @@ začni razvijati algoritem za OPNS
 dodaj vrstico in poglej razliko np.pad
 potrdi temo za diplomsko nalogo
 
-17.11
+16-17.11
 
 podpis zrihtal
 spremeni prvotni opis v trenutno raziskovalno vprašanje
