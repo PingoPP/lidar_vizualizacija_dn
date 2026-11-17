@@ -32,4 +32,9 @@ začni razvijati algoritem za OPNS
 
 dodaj vrstico in poglej razliko np.pad
 potrdi temo za diplomsko nalogo
-histogram stretch
+
+17.11
+
+podpis zrihtal
+spremeni prvotni opis v trenutno raziskovalno vprašanje
+poglej in probaj popraviti bug v OPNS 
