@@ -1,6 +1,6 @@
 '''
 Avtor / Author: Jaka Dacar
-Nazadnje spremenjeno / Last changed: 17.11.2026
+Nazadnje spremenjeno / Last changed: 19.11.2026
 Testirano / tested: NAN
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - Openness (v nadaljevanju bom uporabil besedo 'OPNS')
@@ -40,15 +40,12 @@ def opns_comp(
         ):
 
     pad = int(np.ceil(radius_max))
-
     #hb
     height = np.pad(dem, pad, mode='reflect')   # če edge da nezaželen rezultat, probaj 'edge'
-
-
     rows, columns = dem.shape
-
     #ha
     center = height[pad : pad + rows, pad :  pad + columns]
+    
 
     def elevation ( radius_max: int = 10,                #L_max [v dnevniku]
                     radius_min: int = 1,                 #L_min [v dnevniku]
@@ -77,16 +74,18 @@ def opns_comp(
         radius_min=radius_min,
         n_directions=n_directions
     )
+    
+    nadir = np.zeros(dem.shape, dtype=np.float32)  #Positive [alpha]
+    zenith = np.zeros(dem.shape, dtype=np.float32) #Negative [beta]
 
-    nadir_sum = np.zeros(dem.shape, dtype=np.float32)
-    zenith_sum = np.zeros(dem.shape, dtype=np.float32)
     count = np.zeros(dem.shape, dtype=np.int32)
 
     for az_rad in azimuths_rad:
         dx = np.sin(az_rad)
         dy = -np.cos(az_rad)
 
-        max_angle = np.full(dem.shape, -np.inf)    
+        slope_max = np.full(dem.shape, -1000, dtype=np.float32)   
+        slope_min = np.full(dem.shape, 1000, dtype=np.float32)
 
     for r in radi:
         x = int(np.round(r * dx))
@@ -101,31 +100,32 @@ def opns_comp(
 
         # hor_dist = ((ia-ib)**2 + (ja-jb)**2)**2
         dist = np.hypot(x, y) * cell_size
+        slope = (neighbour - center) / dist
 
-        #theta = tan^-1((hb - ha) / hor_dist)
-        angle = np.arctan2(neighbour - center, dist)
-        angle_max = np.maximum(max_angle, angle)
+        slope_max = np.fmax(slope_max, slope)
+        slope_min = np.fmin(slope_min, slope)
 
-        zenith = np.pi / 2 - angle_max #Positive
-        nadir = np.pi / 2 + angle_max #Negative
-
-        valid = np.isfinite(max_angle)
-        zenith_sum += np.where(valid, zenith, 0)
-        nadir_sum += np.where(valid, nadir, 0) 
+        count = np.zeros(dem.shape, dtype=np.float32)
+        valid = (slope_max > -1000) & (slope_min < 1000)
+        
+        max_angle=np.arctan(slope_max)
+        min_angle=np.arctan(slope_min)
+        zenith += np.where(valid, np.pi / 2 - max_angle, 0)
+        nadir += np.where(valid, np.pi / 2 - min_angle, 0) 
         count += valid
 
-        with np.errstate(invalid='ignore', divide='ignore'):
-            pos = np.where(count > 0, zenith_sum / count, np.nan)
-            neg = np.where(count > 0, nadir_sum / count, np.nan)
+    pos = np.full(dem.shape, np.nan, dtype=np.float32)
+    neg = np.full(dem.shape, np.nan, dtype=np.float32)
+    ok = count > 0
+    pos[ok] = zenith[ok] / count[ok]
+    neg[ok] = nadir[ok] / count[ok]
 
-
-        return pos, neg 
-
-
+    return pos, neg
+    
 def opns(
         dem,
         resolution=0.5,
-        radius_min=1,
+        #radius_min=1,
         radius_max=10,
         n_directions=8,
         ve_factor=1,
@@ -151,13 +151,13 @@ def opns(
     no_data = np.isnan(dem)
 
     dem = dem * ve_factor
-    rad_min = max(int(np.round(radius_min)), 1)
+    #rad_min = max(int(np.round(radius_min)), 1)
     rad_max = min(int(np.round(radius_max)), 10)
 
     pos_opns, neg_opns = opns_comp(
         dem=dem,
         radius_max=rad_max,
-        radius_min=rad_min,
+        #radius_min=rad_min,
         n_directions=n_directions,
         cell_size=resolution,
     )
@@ -199,32 +199,17 @@ for tif in sorted(input_dir.glob("*.tiff")):
     if no_data is not None and not np.isnan(no_data):
         dem[dem == no_data] = np.nan
 
-    array = -dem
 
-    pos_opnss = opns(
+    pos_opnss, neg_opnss = opns(
         dem=dem,
         resolution=0.5,
-        radius_min=1,
         radius_max=10,
         n_directions=8,
         no_data=no_data
     )
 
-    neg_opnss = opns(
-        dem=array,
-        resolution=0.5,
-        radius_min=1,
-        radius_max=10,
-        n_directions=8,
-        no_data=no_data
-        
-    )
-
-    pos_opns = pos_opnss[0].astype(np.float32)
-    rasterio_save(pos_opns, profile, out_pos, no_data=np.nan)
-
-    neg_opns = neg_opnss[0].astype(np.float32)
-    rasterio_save(neg_opns, profile, out_neg, no_data=np.nan)
+    rasterio_save(pos_opnss, profile, out_pos, no_data=np.nan)
+    rasterio_save(neg_opnss, profile, out_neg, no_data=np.nan)
 
     print("shranjeno", out_pos, out_neg)
     break  
