@@ -1,6 +1,6 @@
 '''
 Avtor / Author: Jaka Dacar
-Nazadnje spremenjeno / Last changed: 19.11.2026
+Nazadnje spremenjeno / Last changed: 20.11.2026
 Testirano / tested: NAN
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - Openness (v nadaljevanju bom uporabil besedo 'OPNS')
@@ -10,7 +10,7 @@ That algorithm was made for visualisation tecnique - Openness (in continute, I w
 Algoritem je bil ustvarjen v sklopu diplomske naloge
 Algorithm was made as part of bachelor thesis
 
-Problem: vizualizacija mi ne prikaže + min_elevatio je enako kot prikazuje dejanski max_elevation, samo, da je negativno
+Problem: directions, ni tako definiran kot bi si želel
 '''
 
 from pathlib import Path
@@ -36,7 +36,16 @@ def opns_comp(
         cell_size: float = 0.5,       
         radius_max: int = 10,
         radius_min: int = 1,
-        n_directions: int = 8
+        directions = {                        
+                    'N': {'azimuths': 0},
+                    'NE': {'azimuths': 45},
+                    'E': {'azimuths': 90},
+                    'SE': {'azimuths': 135},
+                    'S': {'azimuths': 180},
+                    'SW': {'azimuths': 225},
+                    'W': {'azimuths': 270},
+                    'NW': {'azimuths': 315},
+                }  
         ):
 
     pad = int(np.ceil(radius_max))
@@ -44,44 +53,49 @@ def opns_comp(
     height = np.pad(dem, pad, mode='reflect')   # če edge da nezaželen rezultat, probaj 'edge'
     rows, columns = dem.shape
     #ha
-    center = height[pad : pad + rows, pad :  pad + columns]
+    center = height[pad : pad + rows, 
+                    pad :  pad + columns
+                ]
     
 
     def elevation ( radius_max: int = 10,                #L_max [v dnevniku]
                     radius_min: int = 1,                 #L_min [v dnevniku]
-                    n_directions: int = 8                #D [v dnevniku]   
+                    directions = {                       #D [v dnevniku]  
+                                'N': {'azimuths': 0},
+                                'NE': {'azimuths': 45},
+                                'E': {'azimuths': 90},
+                                'SE': {'azimuths': 135},
+                                'S': {'azimuths': 180},
+                                'SW': {'azimuths': 225},
+                                'W': {'azimuths': 270},
+                                'NW': {'azimuths': 315},
+                            }                  
     ):
-                                            
-        #directions = {
-        #N = 0,
-        #NW = 45,
-        #W = 90,
-        #SW = 135,
-        #S = 180,
-        #SE = 225,
-        #E = 270,
-        #NE = 315
-        #}
-        
-        azimuths_deg = np.linspace(0, 360, n_directions, endpoint=False)
+
+            
+        azimuths_deg = np.array([direction['azimuths'] for direction in directions.values()], dtype=np.float32)
         azimuths_rad = np.radians(azimuths_deg)
         radi = np.arange(radius_min, radius_max + 1)
 
+
+
         return azimuths_rad, radi
+
 
     azimuths_rad, radi = elevation(
         radius_max=radius_max,
         radius_min=radius_min,
-        n_directions=n_directions
+        #n_directions=n_directions
     )
-    
+
+
+
     nadir = np.zeros(dem.shape, dtype=np.float32)  #Positive [alpha]
     zenith = np.zeros(dem.shape, dtype=np.float32) #Negative [beta]
-
     count = np.zeros(dem.shape, dtype=np.int32)
 
     for az_rad in azimuths_rad:
-        dx = np.sin(az_rad)
+        dx = np.cos(az_rad)
         dy = -np.cos(az_rad)
 
         slope_max = np.full(dem.shape, -1000, dtype=np.float32)   
@@ -95,10 +109,10 @@ def opns_comp(
 
         neighbour = height [
             pad + y : pad + y + rows,
-            pad + x : pad + x + columns,
+            pad + x : pad + x + columns
         ]
 
-        # hor_dist = ((ia-ib)**2 + (ja-jb)**2)**2
+        # hor_dist = np.sqrt(((ia-ib)**2 + (ja-jb)**2))
         dist = np.hypot(x, y) * cell_size
         slope = (neighbour - center) / dist
 
@@ -112,13 +126,16 @@ def opns_comp(
         min_angle=np.arctan(slope_min)
         zenith += np.where(valid, np.pi / 2 - max_angle, 0)
         nadir += np.where(valid, np.pi / 2 - min_angle, 0) 
+        #zenith, nadir = np.array(n_directions)
         count += valid
 
     pos = np.full(dem.shape, np.nan, dtype=np.float32)
     neg = np.full(dem.shape, np.nan, dtype=np.float32)
-    ok = count > 0
-    pos[ok] = zenith[ok] / count[ok]
-    neg[ok] = nadir[ok] / count[ok]
+
+    neg = -neg
+    
+    pos = zenith / directions
+    neg = nadir / directions
 
     return pos, neg
     
@@ -127,7 +144,16 @@ def opns(
         resolution=0.5,
         #radius_min=1,
         radius_max=10,
-        n_directions=8,
+        n_directions = {                       #D [v dnevniku]  
+                        'N': {'azimuths': 0}, 
+                        'NE': {'azimuths': 45},
+                        'E': {'azimuths': 90},
+                        'SE': {'azimuths': 135}, 
+                        'S': {'azimuths': 180},
+                        'SW': {'azimuths': 225},
+                        'W': {'azimuths': 270},
+                        'NW': {'azimuths': 315},
+                        },
         ve_factor=1,
         no_data=None
         ):
@@ -157,9 +183,8 @@ def opns(
     pos_opns, neg_opns = opns_comp(
         dem=dem,
         radius_max=rad_max,
-        #radius_min=rad_min,
-        n_directions=n_directions,
         cell_size=resolution,
+        directions=n_directions,
     )
 
     mask = np.isnan(dem)
