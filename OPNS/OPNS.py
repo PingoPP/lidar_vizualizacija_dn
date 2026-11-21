@@ -10,7 +10,7 @@ That algorithm was made for visualisation tecnique - Openness (in continute, I w
 Algoritem je bil ustvarjen v sklopu diplomske naloge
 Algorithm was made as part of bachelor thesis
 
-Problem: directions, ni tako definiran kot bi si želel
+Problem: formula in osvetlitev!
 '''
 
 from pathlib import Path
@@ -36,16 +36,7 @@ def opns_comp(
         cell_size: float = 0.5,       
         radius_max: int = 10,
         radius_min: int = 1,
-        directions = {                        
-                    'N': {'azimuths': 0},
-                    'NE': {'azimuths': 45},
-                    'E': {'azimuths': 90},
-                    'SE': {'azimuths': 135},
-                    'S': {'azimuths': 180},
-                    'SW': {'azimuths': 225},
-                    'W': {'azimuths': 270},
-                    'NW': {'azimuths': 315},
-                }  
+        directions: int = 8
         ):
 
     pad = int(np.ceil(radius_max))
@@ -58,26 +49,27 @@ def opns_comp(
                 ]
     
 
-    def elevation ( radius_max: int = 10,                #L_max [v dnevniku]
+    def elevation ( 
+                    radius_max: int = 10,                #L_max [v dnevniku]
                     radius_min: int = 1,                 #L_min [v dnevniku]
-                    directions = {                       #D [v dnevniku]  
-                                'N': {'azimuths': 0},
-                                'NE': {'azimuths': 45},
-                                'E': {'azimuths': 90},
-                                'SE': {'azimuths': 135},
-                                'S': {'azimuths': 180},
-                                'SW': {'azimuths': 225},
-                                'W': {'azimuths': 270},
-                                'NW': {'azimuths': 315},
-                            }                  
+                    directions: int = 8,
+                    
+                    #{                       #D [v dnevniku]  
+                    #            'N': {'azimuths': 0},
+                    #            'NE': {'azimuths': 45},
+                    #            'E': {'azimuths': 90},
+                    #            'SE': {'azimuths': 135},
+                    #            'S': {'azimuths': 180},
+                    #            'SW': {'azimuths': 225},
+                    #            'W': {'azimuths': 270},
+                    #            'NW': {'azimuths': 315},
+                    #        }                  
     ):
 
             
-        azimuths_deg = np.array([direction['azimuths'] for direction in directions.values()], dtype=np.float32)
+        azimuths_deg = np.linspace(360, directions, endpoint=False, dtype=np.float32)
         azimuths_rad = np.radians(azimuths_deg)
         radi = np.arange(radius_min, radius_max + 1)
-
-
 
         return azimuths_rad, radi
 
@@ -95,7 +87,7 @@ def opns_comp(
     count = np.zeros(dem.shape, dtype=np.int32)
 
     for az_rad in azimuths_rad:
-        dx = np.cos(az_rad)
+        dx = np.sin(az_rad)
         dy = -np.cos(az_rad)
 
         slope_max = np.full(dem.shape, -1000, dtype=np.float32)   
@@ -123,9 +115,9 @@ def opns_comp(
         valid = (slope_max > -1000) & (slope_min < 1000)
         
         max_angle=np.arctan(slope_max)
-        min_angle=np.arctan(slope_min)
+        #min_angle=np.arctan(slope_min)
         zenith += np.where(valid, np.pi / 2 - max_angle, 0)
-        nadir += np.where(valid, np.pi / 2 - min_angle, 0) 
+        nadir += np.where(valid, np.pi / 2 + max_angle, 0) 
         #zenith, nadir = np.array(n_directions)
         count += valid
 
@@ -144,16 +136,7 @@ def opns(
         resolution=0.5,
         #radius_min=1,
         radius_max=10,
-        n_directions = {                       #D [v dnevniku]  
-                        'N': {'azimuths': 0}, 
-                        'NE': {'azimuths': 45},
-                        'E': {'azimuths': 90},
-                        'SE': {'azimuths': 135}, 
-                        'S': {'azimuths': 180},
-                        'SW': {'azimuths': 225},
-                        'W': {'azimuths': 270},
-                        'NW': {'azimuths': 315},
-                        },
+        n_directions = 8,
         ve_factor=1,
         no_data=None
         ):
@@ -235,6 +218,10 @@ for tif in sorted(input_dir.glob("*.tiff")):
 
     rasterio_save(pos_opnss, profile, out_pos, no_data=np.nan)
     rasterio_save(neg_opnss, profile, out_neg, no_data=np.nan)
+
+    print('Dimesion of pos_opnss: ', pos_opnss.ndim)
+    print('Dimesion of pos_opnss: ', neg_opnss.ndim)
+    print('Type: ', pos_opnss.itemsize, 'bytes', neg_opnss.itemsize, 'bytes')
 
     print("shranjeno", out_pos, out_neg)
     break  
