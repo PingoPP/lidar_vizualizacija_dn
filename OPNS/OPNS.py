@@ -1,6 +1,6 @@
 '''
 Avtor / Author: Jaka Dacar
-Nazadnje spremenjeno / Last changed: 22.11.2026
+Nazadnje spremenjeno / Last changed: 20.11.2026
 Testirano / tested: NAN
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - Openness (v nadaljevanju bom uporabil besedo 'OPNS')
@@ -10,7 +10,7 @@ That algorithm was made for visualisation tecnique - Openness (in continute, I w
 Algoritem je bil ustvarjen v sklopu diplomske naloge
 Algorithm was made as part of bachelor thesis
 
-Problem: direction!
+Problem: directions!
 '''
 
 from pathlib import Path
@@ -69,7 +69,7 @@ def opns_comp(
     ):
 
             
-        azimuths_deg = np.linspace(360, directions, endpoint=False, dtype=np.float32)
+        azimuths_deg = np.linspace(0, 360, directions, endpoint=False, dtype=np.float32)
         azimuths_rad = np.radians(azimuths_deg)
         radi = np.arange(radius_min, radius_max + 1)
 
@@ -92,7 +92,7 @@ def opns_comp(
         dx = np.sin(az_rad)
         dy = -np.cos(az_rad)
 
-        slope_max = np.full(dem.shape, -np.inf, dtype=np.float32)   
+        slope_max = np.full(dem.shape, -1000 , dtype=np.float32)   
         #slope_min = np.full(dem.shape, np.inf, dtype=np.float32)
 
     for r in radi:
@@ -114,7 +114,7 @@ def opns_comp(
         #slope_min = np.fmin(slope_min, slope)
 
         #count = np.zeros(dem.shape, dtype=np.float32)
-    valid = np.isfinite(slope_max) #& np.isfinite(slope_min)
+    valid = (slope_max > 0)  #& np.isfinite(slope_min)
         
     max_angle=np.arctan(slope_max)
     #min_angle=np.arctan(slope_min)
@@ -124,12 +124,38 @@ def opns_comp(
         #zenith, nadir = np.array(n_directions)
         #count += valid.astype(np.int32)
 
+
+    #positive_angle = []
+
+    #for alpha in zenith:
+    #    if alpha > np.pi / 2:
+    #        positive_angle.append(alpha)
+
+    #negative_angle = []
+
+    #for betha in nadir:
+    #    if betha < np.pi / 2:
+    #        negative_angle.append(betha)
+
+    #pos_opns = np.mean(positive_angle)
+    #neg_opns = np.mean(negative_angle)
+
     pos = np.full(dem.shape, np.nan, dtype=np.float32)
     neg = np.full(dem.shape, np.nan, dtype=np.float32)
 
+    ground = 1.0
+    
+    relief = np.zeros(pos.shape, dtype=np.float32)
+    relief[pos > 90 + ground] = 1
+    relief[pos < 90 + ground] = 2
+    relief[np.isnan(pos)] = 0
+
+    relief[neg < 90 + ground] = 2
+    relief[neg > 90 + ground] = 1
+    relief[np.isnan(neg)] = 0
+
     pos = zenith / directions
     neg = nadir / directions
-
 
     if degress:
         pos = np.degrees(pos)
