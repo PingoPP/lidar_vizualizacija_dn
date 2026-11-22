@@ -92,7 +92,7 @@ def opns_comp(
         dx = np.sin(az_rad)
         dy = -np.cos(az_rad)
 
-        slope_max = np.full(dem.shape, -1000 , dtype=np.float32)   
+        slope_max = np.full(dem.shape, -100 , dtype=np.float32)   
         #slope_min = np.full(dem.shape, np.inf, dtype=np.float32)
 
     for r in radi:
@@ -114,7 +114,7 @@ def opns_comp(
         #slope_min = np.fmin(slope_min, slope)
 
         #count = np.zeros(dem.shape, dtype=np.float32)
-    valid = (slope_max > 0)  #& np.isfinite(slope_min)
+    valid = (slope_max > -100)  #& np.isfinite(slope_min)
         
     max_angle=np.arctan(slope_max)
     #min_angle=np.arctan(slope_min)
