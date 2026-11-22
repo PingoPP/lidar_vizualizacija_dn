@@ -1,6 +1,6 @@
 '''
 Avtor / Author: Jaka Dacar
-Nazadnje spremenjeno / Last changed: 20.11.2026
+Nazadnje spremenjeno / Last changed: 22.11.2026
 Testirano / tested: NAN
 
 Ta algoritem je uporabljen za uporabo vizualizacijske tehnike - Openness (v nadaljevanju bom uporabil besedo 'OPNS')
@@ -10,7 +10,7 @@ That algorithm was made for visualisation tecnique - Openness (in continute, I w
 Algoritem je bil ustvarjen v sklopu diplomske naloge
 Algorithm was made as part of bachelor thesis
 
-Problem: formula in osvetlitev!
+Problem: direction!
 '''
 
 from pathlib import Path
@@ -36,7 +36,9 @@ def opns_comp(
         cell_size: float = 0.5,       
         radius_max: int = 10,
         radius_min: int = 1,
-        directions: int = 8
+        directions: int = 8,
+        degress: bool = True
+
         ):
 
     pad = int(np.ceil(radius_max))
@@ -84,14 +86,14 @@ def opns_comp(
 
     nadir = np.zeros(dem.shape, dtype=np.float32)  #Positive [alpha]
     zenith = np.zeros(dem.shape, dtype=np.float32) #Negative [beta]
-    count = np.zeros(dem.shape, dtype=np.int32)
+    #count = np.zeros(dem.shape, dtype=np.int32)
 
     for az_rad in azimuths_rad:
         dx = np.sin(az_rad)
         dy = -np.cos(az_rad)
 
-        slope_max = np.full(dem.shape, -1000, dtype=np.float32)   
-        slope_min = np.full(dem.shape, 1000, dtype=np.float32)
+        slope_max = np.full(dem.shape, -np.inf, dtype=np.float32)   
+        #slope_min = np.full(dem.shape, np.inf, dtype=np.float32)
 
     for r in radi:
         x = int(np.round(r * dx))
@@ -109,25 +111,34 @@ def opns_comp(
         slope = (neighbour - center) / dist
 
         slope_max = np.fmax(slope_max, slope)
-        slope_min = np.fmin(slope_min, slope)
+        #slope_min = np.fmin(slope_min, slope)
 
-        count = np.zeros(dem.shape, dtype=np.float32)
-        valid = (slope_max > -1000) & (slope_min < 1000)
+        #count = np.zeros(dem.shape, dtype=np.float32)
+    valid = np.isfinite(slope_max) #& np.isfinite(slope_min)
         
-        max_angle=np.arctan(slope_max)
-        #min_angle=np.arctan(slope_min)
-        zenith += np.where(valid, np.pi / 2 - max_angle, 0)
-        nadir += np.where(valid, np.pi / 2 + max_angle, 0) 
+    max_angle=np.arctan(slope_max)
+    #min_angle=np.arctan(slope_min)
+
+    zenith += np.where(valid, (np.pi / 2) - max_angle, 0)
+    nadir += np.where(valid, (np.pi / 2) + max_angle, 0) 
         #zenith, nadir = np.array(n_directions)
-        count += valid
+        #count += valid.astype(np.int32)
 
     pos = np.full(dem.shape, np.nan, dtype=np.float32)
     neg = np.full(dem.shape, np.nan, dtype=np.float32)
 
-    neg = -neg
-    
     pos = zenith / directions
     neg = nadir / directions
+
+
+    if degress:
+        pos = np.degrees(pos)
+        neg = np.degrees(neg)
+
+
+    #for az in np.radians(directions):
+    #    print(int(np.round(np.sin(az))), int(np.round(-np.cos(az))))
+
 
     return pos, neg
     
@@ -138,7 +149,8 @@ def opns(
         radius_max=10,
         n_directions = 8,
         ve_factor=1,
-        no_data=None
+        no_data=None,
+        degress=True
         ):
 
     if np.ndim(dem) == 3:
@@ -168,6 +180,7 @@ def opns(
         radius_max=rad_max,
         cell_size=resolution,
         directions=n_directions,
+        degress=degress
     )
 
     mask = np.isnan(dem)
@@ -212,7 +225,7 @@ for tif in sorted(input_dir.glob("*.tiff")):
         dem=dem,
         resolution=0.5,
         radius_max=10,
-        n_directions=8,
+        n_directions=16,
         no_data=no_data
     )
 
