@@ -215,7 +215,19 @@ def opns(
 
     return pos_opns, neg_opns
 
-  
+def relief(pos, neg):
+    ground = 1.0
+
+    relief = np.zeros(pos.shape, dtype=np.float32)
+    relief[pos > 90 + ground] = 1
+    relief[pos < 90 + ground] = 2
+    relief[np.isnan(pos)] = 0
+
+    relief[neg < 90 + ground] = 2
+    relief[neg > 90 + ground] = 1
+    relief[np.isnan(neg)] = 0
+
+    return pos, neg
 
 #-----------------------------------------------------------------------------------------------------------------------------------
 # SHRANJEVANJE
