@@ -41,3 +41,7 @@ potrdi temo za diplomsko nalogo
 podpis zrihtal
 spremeni prvotni opis v trenutno raziskovalno vprašanje
 poglej in probaj popraviti bug v OPNS 
+
+23.11
+
+Dodaj še linear strecth!
