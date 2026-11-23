@@ -44,4 +44,4 @@ poglej in probaj popraviti bug v OPNS
 
 23.11
 
-Dodaj še linear strecth!
+Dodaj še linear strecth (in histogram strectch)!
